@@ -12,6 +12,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import axios from 'axios';
+import myInitObject from '../util/config';
 
 const styles = (theme) => ({
 	paper: {
@@ -83,7 +84,7 @@ class signup extends Component {
 			confirmPassword: this.state.confirmPassword
 		};
 		axios
-			.post('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/signup', newUserData)
+			.post(myInitObject.baseUrl + '/signup', newUserData)
 			.then((response) => {
 				localStorage.setItem('AuthToken', `${response.data.token}`);
 				this.setState({ 

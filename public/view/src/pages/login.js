@@ -10,6 +10,7 @@ import Typography from '@material-ui/core/Typography';
 import withStyles from '@material-ui/core/styles/withStyles';
 import Container from '@material-ui/core/Container';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import myInitObject from './../util/config';
 
 import axios from 'axios';
 
@@ -75,7 +76,7 @@ class login extends Component {
 			password: this.state.password
 		};
 		axios
-			.post('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/login', userData)
+			.post(myInitObject.baseUrl + '/login', userData)
 			.then((response) => {
 				localStorage.setItem('AuthToken', `Bearer ${response.data.token}`);
 				this.setState({ 
@@ -102,7 +103,7 @@ class login extends Component {
 						<LockOutlinedIcon /> 
 					</Avatar>
 					<Typography component="h1" variant="h5">
-						Login
+						Login To Your Payments
 					</Typography>
 					<form className={classes.form} noValidate>
 						<TextField

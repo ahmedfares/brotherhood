@@ -42,13 +42,14 @@ import {
 	PieSeries,
 	Title,
 	Tooltip
-  } from '@devexpress/dx-react-chart-material-ui';
+} from '@devexpress/dx-react-chart-material-ui';
 
 import axios from 'axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { authMiddleWare } from '../util/auth';
 import { blue, green, red } from '@material-ui/core/colors';
+import myInitObject from '../util/config';
 // import Chart from "react-google-charts";
 
 function createData(name, calories, fat, carbs, protein) {
@@ -136,12 +137,40 @@ class Dashboard extends Component {
 		this.state = {
 			todos: [],
 			payments: [],
+			currentPayments: [],
 			paymentBy: '',
 			description: '',
 			category: '',
 			amount: '',
 			categories: [],
 			owners: [],
+			months: [
+				{ Id: 1, Name: 'January' },
+				{ Id: 2, Name: 'February' },
+				{ Id: 3, Name: 'March' },
+				{ Id: 4, Name: 'April' },
+				{ Id: 5, Name: 'May' },
+				{ Id: 6, Name: 'June' },
+				{ Id: 7, Name: 'July' },
+				{ Id: 8, Name: 'August' },
+				{ Id: 9, Name: 'September' },
+				{ Id: 10, Name: 'October' },
+				{ Id: 11, Name: 'November' },
+				{ Id: 12, Name: 'December' },
+				{ Id: 13, Name: 'All' },
+			],
+			years: [
+				{ Value: '2020' },
+				{ Value: '2021' },
+				{ Value: '2022' },
+				{ Value: '2023' },
+				{ Value: '2024' },
+				{ Value: '2025' },
+				{ Value: '2026' },
+				{ Value: '2027' },
+				{ Value: '2028' },
+				{ Value: 'All' }
+			],
 			title: '',
 			body: '',
 			todoId: '',
@@ -149,8 +178,11 @@ class Dashboard extends Component {
 			open: false,
 			uiLoading: true,
 			selectedOwner: 0,
+			selectedMonth: (new Date()).getMonth() + 1,
+			selectedYear: (new Date()).getFullYear(),
 			selectedCategory: 0,
 			buttonType: '',
+			totalPayments: 0,
 			viewOpen: false
 		};
 
@@ -167,11 +199,47 @@ class Dashboard extends Component {
 	};
 
 	handleOwnerSelectChange = (event) => {
-		this.setState({ selectedOwner: event.target.value, name: event.target.name});
+		this.setState({ selectedOwner: event.target.value, name: event.target.name });
+	};
+
+	handleMonthSelectChange = (event) => {
+
+		let currentPays = this.state.payments.filter(x => x.TransactionDate.substring(0, 4) == this.state.selectedYear && x.TransactionDate.substring(5, 7) == event.target.value);
+
+		this.setState({
+			selectedMonth: event.target.value,
+			name: event.target.name,
+			currentPayments: currentPays
+		});
+
+		let total = 0;
+		for (let i = 0; i < currentPays.length; i++) {
+			total += Number(currentPays[i].Amount);
+		}
+		this.setState({
+			totalPayments: total
+		})
+	};
+
+	handleYearSelectChange = (event) => {
+		let currentPays = this.state.payments.filter(x => x.TransactionDate.substring(0, 4) == event.target.value && x.TransactionDate.substring(5, 7) == this.state.selectedMonth);
+		this.setState({
+			selectedYear: event.target.value,
+			name: event.target.name,
+			currentPayments: currentPays
+		});
+
+		let total = 0;
+		for (let i = 0; i < currentPays.length; i++) {
+			total += Number(currentPays[i].Amount);
+		}
+		this.setState({
+			totalPayments: total
+		})
 	};
 
 	handleCategorySelectChange = (event) => {
-		this.setState({ selectedCategory: event.target.value, name: event.target.name});
+		this.setState({ selectedCategory: event.target.value, name: event.target.name });
 	};
 
 	componentWillMount = () => {
@@ -180,19 +248,28 @@ class Dashboard extends Component {
 		const authToken = localStorage.getItem('AuthToken');
 		axios.defaults.headers.common = { Authorization: `${authToken}` };
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
+			.get(myInitObject.baseUrl + '/payments')
 			.then((response) => {
 				this.setState({
 					payments: response.data,
-					uiLoading: false
+					uiLoading: false,
+					currentPayments: response.data.filter(x => x.TransactionDate.substring(0, 4) == this.state.selectedYear && x.TransactionDate.substring(5, 7) == this.state.selectedMonth)
 				});
+
+				let total = 0;
+				for (let i = 0; i < this.state.currentPayments.length; i++) {
+					total += Number(this.state.currentPayments[i].Amount);
+				}
+				this.setState({
+					totalPayments: total
+				})
 			})
 			.catch((err) => {
 				console.log(err);
 			});
 
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/owners')
+			.get(myInitObject.baseUrl + '/owners')
 			.then((response) => {
 				this.setState({
 					owners: response.data,
@@ -203,7 +280,7 @@ class Dashboard extends Component {
 				console.log(err);
 			});
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/collections')
+			.get(myInitObject.baseUrl + '/collections')
 			.then((response) => {
 				this.setState({
 					categories: response.data,
@@ -222,10 +299,10 @@ class Dashboard extends Component {
 		axios.defaults.headers.common = { Authorization: `${authToken}` };
 		let paymentId = data.payment.paymentId;
 		axios
-			.delete(`https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`)
+			.delete(myInitObject.baseUrl + `/payment/${paymentId}`)
 			.then(() => {
 				axios
-					.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
+					.get(myInitObject.baseUrl + '/payments')
 					.then((response) => {
 						this.setState({
 							payments: response.data,
@@ -260,39 +337,66 @@ class Dashboard extends Component {
 	}
 
 	renderCategoryOptions() {
-		var categorySelect = [...[{collectionId:0,collectionName:'Select a Category'}], ...this.state.categories];
+		var categorySelect = [...[{ collectionId: 0, collectionName: 'Select a Category' }], ...this.state.categories];
 		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select a category"
-				value={dt.collectionId}
-			   key={i} name={dt.collectionName}>{dt.collectionName}</MenuItem>
-			
-		  );
+			//console.log(dt);
+			return (
+				<MenuItem
+					label="Select a category"
+					value={dt.collectionId}
+					key={i} name={dt.collectionName}>{dt.collectionName}</MenuItem>
+
+			);
 		});
-	   }
+	}
 
 	renderOwnerOptions() {
-		var categorySelect = [...[{ownerId:0,ownerName:'Select Owner'}], ...this.state.owners];
+		var categorySelect = [...[{ ownerId: 0, ownerName: 'Select Owner' }], ...this.state.owners];
 		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select owner"
-				value={dt.ownerId}
-			   key={i} name={dt.ownerName}>{dt.ownerName}</MenuItem>
-			
-		  );
-		});
-	   }
+			//console.log(dt);
+			return (
+				<MenuItem
+					label="Select owner"
+					value={dt.ownerId}
+					key={i} name={dt.ownerName}>{dt.ownerName}</MenuItem>
 
+			);
+		});
+	}
+
+	renderMonthsOptions() {
+		var monthSelect = [...[{ Id: 0, Name: 'Select Month' }], ...this.state.months];
+		return monthSelect.map((dt, i) => {
+			//console.log(dt);
+			return (
+				<MenuItem
+					label="Select Month"
+					value={dt.Id}
+					key={i} name={dt.Name}>{dt.Name}</MenuItem>
+
+			);
+		});
+	}
+
+	renderYearsOptions() {
+		var yearSelect = [...[{ Value: 'Select Year' }], ...this.state.years];
+		return yearSelect.map((dt, i) => {
+			//console.log(dt);
+			return (
+				<MenuItem
+					label="Select year"
+					value={dt.Value}
+					key={i} name={dt.Value}>{dt.Value}</MenuItem>
+
+			);
+		});
+	}
 
 	render() {
 
 		const DialogTitle = withStyles(styles)((props) => {
 			const { children, classes, onClose, ...other } = props;
-			
+
 			return (
 				<MuiDialogTitle disableTypography className={classes.root} {...other}>
 					<Typography variant="h6">{children}</Typography>
@@ -385,76 +489,100 @@ class Dashboard extends Component {
 			const categoryData = [];
 			const ownerData = [];
 
+
 			const chartData = [
 				{
-				  category: 'Rent', payment: 0, expected: 1200,
+					category: 'Rent', payment: 0, expected: 0,
 				}, {
-					category: 'Charity', payment: 0, expected: 1200,
+					category: 'Charity', payment: 0, expected: 0,
 				}, {
-					category: 'Electricity', payment: 0, expected: 100,
+					category: 'Electricity', payment: 0, expected: 0,
 				}, {
-					category: 'Internet', payment: 0, expected: 40,
+					category: 'Internet', payment: 0, expected: 0,
 				}, {
-					category: 'Insurance', payment: 0, expected: 75,
+					category: 'Insurance', payment: 0, expected: 0,
 				}, {
-					category: 'Expenses', payment: 0, expected: 285,
+					category: 'Expenses', payment: 0, expected: 0,
 				}, {
-					category: 'Fuel', payment: 0, expected: 100,
+					category: 'Fuel', payment: 0, expected: 0,
 				}];
 
-			
-			if(this.state.owners.length > 0 && this.state.categories.length > 0 && this.state.payments.length > 0)
-			{
-				this.state.payments.map(obj=>({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function(res, value) {
+			if (this.state.owners.length > 0 && this.state.categories.length > 0 && this.state.currentPayments.length > 0) {
+				this.state.currentPayments.map(obj => ({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function (res, value) {
 					if (!res[value.CategoryName]) {
-					  res[value.CategoryName] = { argument: value.CategoryName, value: value.Amount };
-					  categoryData.push(res[value.CategoryName])
+						res[value.CategoryName] = { argument: value.CategoryName, value: value.Amount };
+						categoryData.push(res[value.CategoryName])
 					}
-					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount)?Number(res[value.CategoryName].Amount):0);
+					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount) ? Number(res[value.CategoryName].Amount) : 0);
 					res[value.CategoryName].value = res[value.CategoryName].Amount;
 					return res;
-				  }, {});
+				}, {});
 
-				this.state.payments.map(obj=>({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function(res, value) {
+				this.state.currentPayments.map(obj => ({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName, CategoryAmount: this.state.categories.find(x => x.collectionId == obj.Category).Amount })).reduce(function (res, value) {
 					if (!res[value.CategoryName]) {
-					  res[value.CategoryName] = { category: value.CategoryName, payment: value.Amount,expected: 
-					(value.CategoryName == 'Rent')?1200:(value.CategoryName == 'Charity')?1200:(value.CategoryName == 'Food')?500:
-					(value.CategoryName == 'Electricity')?100:(value.CategoryName == 'Internet')?40:(value.CategoryName == 'Insurance')?75:
-					(value.CategoryName == 'Expenses')?285:(value.CategoryName == 'Fuel')?100:0
-					};
-					  chartData.push(res[value.CategoryName])
+						res[value.CategoryName] = {
+							category: value.CategoryName,
+							payment: value.Amount,
+							expected: Number(value.CategoryAmount)
+						};
+						chartData.push(res[value.CategoryName])
 					}
-					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount)?Number(res[value.CategoryName].Amount):0);
+					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount) ? Number(res[value.CategoryName].Amount) : 0);
 					res[value.CategoryName].payment = res[value.CategoryName].Amount;
 					return res;
-				  }, {});
-	
-				this.state.payments.map(obj=>({ ...obj, OwnerName: this.state.owners.find(x => x.ownerId == obj.TransactionBy).ownerName})).reduce(function(res, value) {
-					  if (!res[value.OwnerName]) {
-						res[value.OwnerName] = { argument: value.OwnerName, value: value.Amount };
+				}, {});
+
+				this.state.currentPayments.map(obj => ({ ...obj, OwnerName: this.state.owners.find(x => x.ownerId == obj.TransactionBy).ownerName, OwnerAmount: this.state.owners.find(x => x.ownerId == obj.TransactionBy).Amount })).reduce(function (res, value) {
+					if (!res[value.OwnerName]) {
+						res[value.OwnerName] = { argument: value.OwnerName, value: value.Amount, expected: Number(value.OwnerAmount) };
 						ownerData.push(res[value.OwnerName])
-					  }
-					  res[value.OwnerName].Amount = Number(value.Amount) + ((res[value.OwnerName].Amount)?Number(res[value.OwnerName].Amount):0);
-					  res[value.OwnerName].value = res[value.OwnerName].Amount;
-					  return res;
-					}, {});
-	
+					}
+					res[value.OwnerName].Amount = Number(value.Amount) + ((res[value.OwnerName].Amount) ? Number(res[value.OwnerName].Amount) : 0);
+					res[value.OwnerName].value = res[value.OwnerName].Amount;
+					return res;
+				}, {});
+
 			}
-			
-			const expectedData = [
-				{ argument:'Food', value:500 },
-				{ argument:'Rent', value:1200 },
-				{ argument:'Electricity', value:100 },
-				{ argument:'Internet', value:40 },
-				{ argument:'Charity', value:1200 },
-				{ argument:'Fuel', value:100 },
-				{ argument:'Insurance', value:75 },
-				{ argument:'Expenses', value:285 },
-			  ];
+
+			let header = "Payments Vs Expected payments in "+this.state.selectedMonth + "-" + this.state.selectedYear+" Total Payments : " + this.state.totalPayments;
+
 			return (
-				<main style={{width:1200, padding:24}}>
+				<main style={{ width: 1200, padding: 24 }}>
 					<div className={classes.toolbar} />
 
+					<div className="row" style={{ margin: 10 }}>
+						<div className={`col-xs-3 col-md-3`}>
+							<Select
+								variant="outlined"
+								required
+								fullWidth
+								id="paymentBy"
+								label="paymentBy"
+								name="paymentBy"
+								autoComplete="paymentBy"
+								helperText={errors.paymentBy}
+								value={this.state.selectedMonth}
+								onChange={this.handleMonthSelectChange}>
+								{this.renderMonthsOptions()}
+							</Select>
+						</div>
+						<div className={`col-xs-3 col-md-3`}>
+							<Select
+								variant="outlined"
+								required
+								fullWidth
+								id="paymentBy"
+								label="paymentBy"
+								name="paymentBy"
+								autoComplete="paymentBy"
+								helperText={errors.paymentBy}
+								value={this.state.selectedYear}
+								onChange={this.handleYearSelectChange}>
+								{this.renderYearsOptions()}
+							</Select>
+						</div>
+
+					</div>
 					<TableContainer component={Paper} style={{ marginBottom: 20 }}>
 						<Table sx={{ minWidth: 650 }} aria-label="a dense table">
 							<TableBody>
@@ -484,7 +612,7 @@ class Dashboard extends Component {
 												<EventTracker />
 												<Tooltip />
 												<HoverState />
-												<Title text="Payments Vs Expected payments in Oct 2021" />
+												<Title text={header} />
 												<Stack
 												/>
 											</Chart>
@@ -535,6 +663,47 @@ class Dashboard extends Component {
 											<Tooltip />
 											<HoverState />
 										</Chart>
+									</TableCell>
+								</TableRow>
+
+							</TableBody>
+						</Table>
+					</TableContainer>
+
+					<TableContainer component={Paper} style={{ marginBottom: 20 }}>
+						<Table sx={{ minWidth: 650 }} aria-label="a dense table">
+							<TableBody>
+								<TableRow >
+									<TableCell>
+										<Paper>
+											<Chart
+												data={ownerData}
+											>
+												<ArgumentAxis />
+												<ValueAxis
+													max={2400}
+												/>
+
+												<BarSeries
+													name="value"
+													valueField="value"
+													argumentField="argument"
+												/>
+												<BarSeries
+													name="Expected"
+													valueField="expected"
+													argumentField="argument"
+												/>
+												<Animation />
+												<Legend />
+												<EventTracker />
+												<Tooltip />
+												<HoverState />
+												<Title text="Payments Vs Expected payments in Oct 2021" />
+												<Stack
+												/>
+											</Chart>
+										</Paper>
 									</TableCell>
 								</TableRow>
 

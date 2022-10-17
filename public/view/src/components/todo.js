@@ -44,6 +44,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { authMiddleWare } from '../util/auth';
 import { blue, green, red } from '@material-ui/core/colors';
+import myInitObject from '../util/config';
 // import Chart from "react-google-charts";
 
 function createData(name, calories, fat, carbs, protein) {
@@ -175,7 +176,7 @@ class todo extends Component {
 		const authToken = localStorage.getItem('AuthToken');
 		axios.defaults.headers.common = { Authorization: `${authToken}` };
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
+			.get(myInitObject.baseUrl + '/payments')
 			.then((response) => {
 				this.setState({
 					payments: response.data,
@@ -187,7 +188,7 @@ class todo extends Component {
 			});
 
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/owners')
+			.get(myInitObject.baseUrl + '/owners')
 			.then((response) => {
 				this.setState({
 					owners: response.data,
@@ -198,7 +199,7 @@ class todo extends Component {
 				console.log(err);
 			});
 		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/collections')
+			.get(myInitObject.baseUrl + '/collections')
 			.then((response) => {
 				this.setState({
 					categories: response.data,
@@ -219,10 +220,10 @@ class todo extends Component {
 			axios.defaults.headers.common = { Authorization: `${authToken}` };
 			let paymentId = data.payment.paymentId;
 			axios
-				.delete(`https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`)
+				.delete(myInitObject.baseUrl + `/payment/${paymentId}`)
 				.then(() => {
 					axios
-						.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
+						.get(myInitObject.baseUrl + '/payments')
 						.then((response) => {
 							this.setState({
 								payments: response.data,
@@ -340,13 +341,13 @@ class todo extends Component {
 			let options = {};
 			if (this.state.buttonType === 'Edit') {
 				options = {
-					url: `https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${this.state.todoId}`,
+					url: myInitObject.baseUrl + `/payment/${this.state.todoId}`,
 					method: 'put',
 					data: userPayment
 				};
 			} else {
 				options = {
-					url: 'https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment',
+					url: myInitObject.baseUrl + '/payment',
 					method: 'post',
 					data: userPayment
 				};
@@ -361,7 +362,7 @@ class todo extends Component {
 					const authToken = localStorage.getItem('AuthToken');
 					axios.defaults.headers.common = { Authorization: `${authToken}` };
 					axios
-						.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
+						.get(myInitObject.baseUrl + '/payments')
 						.then((response) => {
 							this.setState({
 								payments: response.data,
@@ -423,16 +424,6 @@ class todo extends Component {
 	
 			}
 			
-			const expectedData = [
-				{ argument:'Food', value:500 },
-				{ argument:'Rent', value:1200 },
-				{ argument:'Electricity', value:100 },
-				{ argument:'Internet', value:40 },
-				{ argument:'Charity', value:1200 },
-				{ argument:'Fuel', value:100 },
-				{ argument:'Insurance', value:75 },
-				{ argument:'Expenses', value:285 },
-			  ];
 			return (
 				<main style={{width:1200, padding:24}}>
 					<div className={classes.toolbar} />
@@ -490,7 +481,7 @@ class todo extends Component {
 										id="description"
 										label="Description"
 										name="description"
-										autoComplete="description"
+										autoComplete="off"
 										helperText={errors.description}
 										value={this.state.description}
 										error={errors.description ? true : false}
@@ -521,7 +512,7 @@ class todo extends Component {
 										id="amount"
 										label="Amount"
 										name="amount"
-										autoComplete="amount"
+										autoComplete="off"
 										helperText={errors.amount}
 										value={this.state.amount}
 										error={errors.amount ? true : false}
