@@ -10,6 +10,7 @@ exports.getOwners = (request, response) => {
 				owners.push({
                     ownerId: doc.data().ID,
                     ownerName: doc.data().Name,
+                    Amount: doc.data().Amount,
 				});
 			});
 			return response.json(owners);
@@ -30,7 +31,8 @@ exports.getCollections = (request, response) => {
 			data.forEach((doc) => {
 				collections.push({
                     collectionId: doc.data().ID,
-                    collectionName: doc.data().Name
+                    collectionName: doc.data().Name,
+					Amount:  doc.data().Amount
 				});
 			});
 			return response.json(collections);
