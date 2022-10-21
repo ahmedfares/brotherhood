@@ -99,18 +99,19 @@ class login extends Component {
     const { errors, loading } = this.state;
     return (
       <Container component="main" maxWidth="xs">
+        <div id="bg"></div>
         <div>
-          <img
-            style={{
-              zIndex: 1000,
-              width: "350px",
-              height: "100px",
-              marginBottom: "60px",
-            }}
-            src="logo.png"
-            alt="logo"
-          />
           <form>
+            <img
+              style={{
+                zIndex: 1000,
+                width: "350px",
+                height: "100px",
+                marginBottom: "60px",
+              }}
+              src="logo.png"
+              alt="logo"
+            />
             <div class="form-field">
               <input
                 id="email"
