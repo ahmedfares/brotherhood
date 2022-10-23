@@ -25,6 +25,14 @@ const styles = (theme) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
   },
+  actions: {
+    display: "flex",
+    padding: "8px",
+    justifyContent: "right",
+  },
+  row: {
+    marginBottom: "20px",
+  },
   toolbar: theme.mixins.toolbar,
   root: {},
   details: {
@@ -64,7 +72,7 @@ const styles = (theme) => ({
     marginTop: 10,
   },
   submitButton: {
-    marginTop: "10px",
+    marginTop: "0px",
   },
 });
 
@@ -206,146 +214,153 @@ class account extends Component {
       return (
         <main className={classes.content}>
           <div className={classes.toolbar} />
-          <Card>
-            <CardContent>
-              <div className={classes.details}>
-                <div>
-                  <Avatar
-                    src={sessionStorage.getItem("profilePicture")}
-                    className={classes.avatar}
-                  />
-                  <Typography
-                    className={classes.locationText}
-                    gutterBottom
-                    variant="h4"
-                  >
-                    {this.state.firstName} {this.state.lastName}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    type="submit"
-                    size="small"
-                    startIcon={<CloudUploadIcon />}
-                    className={classes.uploadButton}
-                    onClick={this.profilePictureHandler}
-                  >
-                    Upload Photo
-                  </Button>
-                  <input type="file" onChange={this.handleImageChange} />
-
-                  {this.state.imageError ? (
-                    <div className={classes.customError}>
-                      {" "}
-                      Wrong Image Format || Supported Format are PNG and JPG
-                    </div>
-                  ) : (
-                    false
-                  )}
-                </div>
-              </div>
-              <div className={classes.progress} />
-            </CardContent>
-            <Divider />
-          </Card>
+          <div className="row">
+            <div className="col-md-1 col-sm-12"></div>
+            <div className="col-md-4 col-sm-12">
+              <Card className={classes.row}>
+                <CardContent>
+                  <div class="card-body text-center">
+                    <img
+                      src={sessionStorage.getItem("profilePicture")}
+                      alt="avatar"
+                      class="rounded-circle img-fluid"
+                      style={{ width: "150px" }}
+                    ></img>
+                    <h5 class="my-3">
+                      {this.state.firstName} {this.state.lastName}
+                    </h5>
+                    <p class="text-muted mb-1">{this.state.email}</p>
+                    <p class="text-muted mb-4">{this.state.phoneNumber}</p>
+                    <input
+                      type="file"
+                      class="form-control"
+                      onChange={this.handleImageChange}
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      style={{ "margin-top": "10px" }}
+                      onClick={this.profilePictureHandler}
+                    >
+                      Upload Photo
+                    </button>
+                  </div>
+                  <div className={classes.progress} />
+                </CardContent>
+                <Divider />
+              </Card>
+            </div>
+            <div className="col-md-6 col-sm-12">
+              <Card {...rest} className={clsx(classes.root, classes)}>
+                <form autoComplete="off" noValidate>
+                  <Divider />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">First Name</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={this.state.firstName}
+                          onChange={this.handleChange}
+                          className="form-control"
+                        />
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Last Name</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={this.state.lastName}
+                          onChange={this.handleChange}
+                          className="form-control"
+                        />
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Email</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="email"
+                          value={this.state.email}
+                          onChange={this.handleChange}
+                          className="form-control"
+                        />
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Phone Number</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="phoneNumber"
+                          value={this.state.phoneNumber}
+                          onChange={this.handleChange}
+                          className="form-control"
+                        />
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Username</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="email"
+                          value={this.state.username}
+                          onChange={this.handleChange}
+                          className="form-control"
+                          disabled
+                        />
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Country</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <input
+                          type="text"
+                          name="country"
+                          value={this.state.country}
+                          onChange={this.handleChange}
+                          className="form-control"
+                        />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                  <Divider />
+                  <CardActions className={classes.actions}>
+                    <Button
+                      color="primary"
+                      variant="contained"
+                      type="submit"
+                      className={classes.submitButton}
+                      onClick={this.updateFormValues}
+                      disabled={
+                        this.state.buttonLoading ||
+                        !this.state.firstName ||
+                        !this.state.lastName ||
+                        !this.state.country
+                      }
+                    >
+                      Save details
+                      {this.state.buttonLoading && (
+                        <CircularProgress
+                          size={30}
+                          className={classes.progess}
+                        />
+                      )}
+                    </Button>
+                  </CardActions>
+                </form>
+              </Card>
+            </div>
+          </div>
 
           <br />
-          <Card {...rest} className={clsx(classes.root, classes)}>
-            <form autoComplete="off" noValidate>
-              <Divider />
-              <CardContent>
-                <Grid container spacing={3}>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="First name"
-                      margin="dense"
-                      name="firstName"
-                      variant="outlined"
-                      value={this.state.firstName}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Last name"
-                      margin="dense"
-                      name="lastName"
-                      variant="outlined"
-                      value={this.state.lastName}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      margin="dense"
-                      name="email"
-                      variant="outlined"
-                      value={this.state.email}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Phone Number"
-                      margin="dense"
-                      name="phone"
-                      type="number"
-                      variant="outlined"
-                      value={this.state.phoneNumber}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="User Name"
-                      margin="dense"
-                      name="userHandle"
-                      variant="outlined"
-                      value={this.state.username}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                  <Grid item md={12} xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Country"
-                      margin="dense"
-                      name="country"
-                      variant="outlined"
-                      value={this.state.country}
-                      onChange={this.handleChange}
-                    />
-                  </Grid>
-                </Grid>
-              </CardContent>
-              <Divider />
-              <CardActions />
-            </form>
-          </Card>
-          <Button
-            color="primary"
-            variant="contained"
-            type="submit"
-            className={classes.submitButton}
-            onClick={this.updateFormValues}
-            disabled={
-              this.state.buttonLoading ||
-              !this.state.firstName ||
-              !this.state.lastName ||
-              !this.state.country
-            }
-          >
-            Save details
-            {this.state.buttonLoading && (
-              <CircularProgress size={30} className={classes.progess} />
-            )}
-          </Button>
         </main>
       );
     }
