@@ -215,8 +215,8 @@ class account extends Component {
         <main className={classes.content}>
           <div className={classes.toolbar} />
           <div className="row">
-            <div className="col-md-1 col-sm-12"></div>
-            <div className="col-md-4 col-sm-12">
+            <div className="col-md-1 col-sm-12 col-xs-12"></div>
+            <div className="col-md-4 col-sm-12 col-xs-12">
               <Card className={classes.row}>
                 <CardContent>
                   <div class="card-body text-center">
@@ -250,7 +250,7 @@ class account extends Component {
                 <Divider />
               </Card>
             </div>
-            <div className="col-md-6 col-sm-12">
+            <div className="col-md-6 col-sm-12 col-xs-12">
               <Card {...rest} className={clsx(classes.root, classes)}>
                 <form autoComplete="off" noValidate>
                   <Divider />

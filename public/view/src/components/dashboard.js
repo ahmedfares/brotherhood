@@ -559,9 +559,9 @@ class Dashboard extends Component {
       return (
         <main style={{ width: 1200, padding: 24 }}>
           <div className={classes.toolbar} />
-          {/* 
+
           <TableContainer component={Paper} style={{ marginBottom: 20 }}>
-            <Table aria-label="a dense table">
+            <Table sx={{ minWidth: 650 }} aria-label="a dense table">
               <TableBody>
                 <TableRow>
                   <TableCell>
@@ -638,7 +638,7 @@ class Dashboard extends Component {
                 </TableRow>
               </TableBody>
             </Table>
-          </TableContainer> */}
+          </TableContainer>
 
           <Dialog
             onClose={handleViewClose}
