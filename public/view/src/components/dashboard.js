@@ -1,67 +1,46 @@
 import React, { Component } from "react";
 
 import withStyles from "@material-ui/core/styles/withStyles";
-import Typography from "@material-ui/core/Typography";
-import Button from "@material-ui/core/Button";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
-import TableCell from "@material-ui/core/TableCell";
-import TableContainer from "@material-ui/core/TableContainer";
-import Paper from "@material-ui/core/Paper";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import Dialog from "@material-ui/core/Dialog";
-import AddCircleIcon from "@material-ui/icons/AddCircle";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import CloseIcon from "@material-ui/icons/Close";
-import Slide from "@material-ui/core/Slide";
-import TextField from "@material-ui/core/TextField";
 import Grid from "@material-ui/core/Grid";
-import Card from "@material-ui/core/Card";
-import CardActions from "@material-ui/core/CardActions";
+import Select from "@material-ui/core/Select";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import CardContent from "@material-ui/core/CardContent";
-import MuiDialogTitle from "@material-ui/core/DialogTitle";
-import MuiDialogContent from "@material-ui/core/DialogContent";
 import { Stack, Animation } from "@devexpress/dx-react-chart";
+import Paper from "@material-ui/core/Paper";
 import {
   Legend,
   ArgumentAxis,
   ValueAxis,
   BarSeries,
+  Tooltip,
 } from "@devexpress/dx-react-chart-material-ui";
-import { Palette } from "@devexpress/dx-react-chart";
 import { EventTracker, HoverState } from "@devexpress/dx-react-chart";
 
 import {
   Chart,
-  PieSeries,
   Title,
-  Tooltip,
+  PieSeries,
 } from "@devexpress/dx-react-chart-material-ui";
 
 import axios from "axios";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { authMiddleWare } from "../util/auth";
-import { blue, green, red } from "@material-ui/core/colors";
-// import Chart from "react-google-charts";
 
-function createData(name, calories, fat, carbs, protein) {
-  return { name, calories, fat, carbs, protein };
-}
-const rows = [
-  {
-    name: "Ahmed",
-    calories: 98,
-  },
-];
+const Root = (props) => (
+  <Legend.Root
+    {...props}
+    sx={{ display: "flex", margin: "auto", flexDirection: "row" }}
+  />
+);
+const Label = (props) => (
+  <Legend.Label {...props} sx={{ whiteSpace: "nowrap" }} />
+);
 
 const styles = (theme) => ({
+  inputcontainer: {
+    marginBottom: "10px",
+  },
   content: {
     flexGrow: 1,
     padding: theme.spacing(3),
@@ -84,12 +63,6 @@ const styles = (theme) => ({
     bottom: 0,
     right: 0,
   },
-  form: {
-    width: "98%",
-    marginLeft: 13,
-    marginTop: theme.spacing(10),
-  },
-  toolbar: theme.mixins.toolbar,
   root: {
     minWidth: 470,
   },
@@ -124,10 +97,6 @@ const styles = (theme) => ({
   },
 });
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
 class Dashboard extends Component {
   constructor(props) {
     super(props);
@@ -135,6 +104,7 @@ class Dashboard extends Component {
     this.state = {
       todos: [],
       payments: [],
+      selectedPayments: [],
       paymentBy: "",
       description: "",
       category: "",
@@ -148,14 +118,13 @@ class Dashboard extends Component {
       open: false,
       uiLoading: true,
       selectedOwner: 0,
+      selectedMonth: 0,
+      selectedYear: 2,
+      selectedChart: 0,
       selectedCategory: 0,
       buttonType: "",
       viewOpen: false,
     };
-
-    this.deleteTodoHandler = this.deleteTodoHandler.bind(this);
-    this.handleEditClickOpen = this.handleEditClickOpen.bind(this);
-    this.handleViewOpen = this.handleViewOpen.bind(this);
   }
 
   handleChange = (event) => {
@@ -178,6 +147,47 @@ class Dashboard extends Component {
     });
   };
 
+  handleMonthChange = (event) => {
+    this.setState(
+      {
+        selectedMonth: event.target.value,
+      },
+      () => {
+        this.handleDateSelectChange();
+      }
+    );
+  };
+
+  handleChartChange = (event) => {
+    this.setState({
+      selectedChart: event.target.value,
+    });
+  };
+
+  handleYearChange = (event) => {
+    this.setState(
+      {
+        selectedYear: event.target.value,
+      },
+      () => {
+        this.handleDateSelectChange();
+      }
+    );
+  };
+
+  handleDateSelectChange = () => {
+    this.setState({
+      selectedPayments: this.state.payments.filter(
+        (x) =>
+          (new Date(x.TransactionDate).getMonth() + 1 ===
+            this.state.selectedMonth ||
+            this.state.selectedMonth === 0) &&
+          new Date(x.TransactionDate).getFullYear() - 2020 ===
+            this.state.selectedYear
+      ),
+    });
+  };
+
   componentWillMount = () => {
     authMiddleWare(this.props.history);
     const authToken = localStorage.getItem("AuthToken");
@@ -190,7 +200,10 @@ class Dashboard extends Component {
         this.setState({
           payments: response.data,
           uiLoading: false,
+          selectedYear: new Date().getFullYear() - 2020,
+          selectedMonth: new Date().getMonth() + 1,
         });
+        this.handleDateSelectChange();
       })
       .catch((err) => {
         console.log(err);
@@ -223,53 +236,6 @@ class Dashboard extends Component {
         console.log(err);
       });
   };
-
-  deleteTodoHandler(data) {
-    authMiddleWare(this.props.history);
-    const authToken = localStorage.getItem("AuthToken");
-    axios.defaults.headers.common = { Authorization: `${authToken}` };
-    let paymentId = data.payment.paymentId;
-    axios
-      .delete(
-        `https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`
-      )
-      .then(() => {
-        axios
-          .get(
-            "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments"
-          )
-          .then((response) => {
-            this.setState({
-              payments: response.data,
-              uiLoading: false,
-            });
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
-  handleEditClickOpen(data) {
-    this.setState({
-      title: data.todo.title,
-      body: data.todo.body,
-      todoId: data.todo.todoId,
-      buttonType: "Edit",
-      open: true,
-    });
-  }
-
-  handleViewOpen(data) {
-    this.setState({
-      title: data.todo.title,
-      body: data.todo.body,
-      viewOpen: true,
-    });
-  }
 
   renderCategoryOptions() {
     var categorySelect = [
@@ -311,93 +277,77 @@ class Dashboard extends Component {
     });
   }
 
-  render() {
-    const DialogTitle = withStyles(styles)((props) => {
-      const { children, classes, onClose, ...other } = props;
-
+  renderMonthOptions() {
+    var monthSelect = [
+      { monthId: 0, monthName: "All" },
+      { monthId: 1, monthName: "January" },
+      { monthId: 2, monthName: "February" },
+      { monthId: 3, monthName: "March" },
+      { monthId: 4, monthName: "April" },
+      { monthId: 5, monthName: "May" },
+      { monthId: 6, monthName: "June" },
+      { monthId: 7, monthName: "July" },
+      { monthId: 8, monthName: "August" },
+      { monthId: 9, monthName: "September" },
+      { monthId: 10, monthName: "October" },
+      { monthId: 11, monthName: "November" },
+      { monthId: 12, monthName: "December" },
+    ];
+    return monthSelect.map((dt, i) => {
+      //console.log(dt);
       return (
-        <MuiDialogTitle disableTypography className={classes.root} {...other}>
-          <Typography variant="h6">{children}</Typography>
-          {onClose ? (
-            <IconButton
-              aria-label="close"
-              className={classes.closeButton}
-              onClick={onClose}
-            >
-              <CloseIcon />
-            </IconButton>
-          ) : null}
-        </MuiDialogTitle>
+        <MenuItem label="All" value={dt.monthId} key={i} name={dt.monthName}>
+          {dt.monthName}
+        </MenuItem>
       );
     });
+  }
 
-    const DialogContent = withStyles((theme) => ({
-      viewRoot: {
-        padding: theme.spacing(2),
-      },
-    }))(MuiDialogContent);
+  renderYearOptions() {
+    var yearSelect = [
+      { Id: 0, yearName: "2020" },
+      { Id: 1, yearName: "2021" },
+      { Id: 2, yearName: "2022" },
+      { Id: 3, yearName: "2023" },
+      { Id: 4, yearName: "2024" },
+      { Id: 5, yearName: "2025" },
+      { Id: 6, yearName: "2026" },
+    ];
+    return yearSelect.map((dt, i) => {
+      //console.log(dt);
+      return (
+        <MenuItem label="Select year" value={dt.Id} key={i} name={dt.yearName}>
+          {dt.yearName}
+        </MenuItem>
+      );
+    });
+  }
 
+  renderChartOptions() {
+    var chartSelect = [
+      { Id: 0, chartName: "Categories Chart 1" },
+      { Id: 1, chartName: "Owners Chart 1" },
+      { Id: 2, chartName: "Categories Chart 2" },
+      { Id: 3, chartName: "Owners Chart 2" },
+    ];
+    return chartSelect.map((dt, i) => {
+      return (
+        <MenuItem
+          label="Select chart"
+          value={dt.Id}
+          key={i}
+          name={dt.chartName}
+        >
+          {dt.chartName}
+        </MenuItem>
+      );
+    });
+  }
+
+  render() {
     dayjs.extend(relativeTime);
     const { classes } = this.props;
-    const { open, errors, viewOpen } = this.state;
-
-    const handleClickOpen = () => {
-      this.setState({
-        todoId: "",
-        title: "",
-        body: "",
-        buttonType: "",
-        open: true,
-      });
-    };
-
-    const handleSubmit = (event) => {
-      authMiddleWare(this.props.history);
-      event.preventDefault();
-      const userTodo = {
-        title: this.state.title,
-        body: this.state.body,
-      };
-      const userPayment = {
-        TransactionBy: this.state.selectedOwner,
-        Category: this.state.selectedCategory,
-        Description: this.state.description,
-        Amount: this.state.amount,
-      };
-      let options = {};
-      if (this.state.buttonType === "Edit") {
-        options = {
-          url: `/payment/${this.state.todoId}`,
-          method: "put",
-          data: userPayment,
-        };
-      } else {
-        options = {
-          url: "/payment",
-          method: "post",
-          data: userPayment,
-        };
-      }
-      const authToken = localStorage.getItem("AuthToken");
-      axios.defaults.headers.common = { Authorization: `${authToken}` };
-      axios(options)
-        .then(() => {
-          this.setState({ open: false });
-          window.location.reload();
-        })
-        .catch((error) => {
-          this.setState({ open: true, errors: error.response.data });
-          console.log(error);
-        });
-    };
-
-    const handleViewClose = () => {
-      this.setState({ viewOpen: false });
-    };
-
-    const handleClose = (event) => {
-      this.setState({ open: false });
-    };
+    const { errors } = this.state;
 
     if (this.state.uiLoading === true) {
       return (
@@ -411,75 +361,15 @@ class Dashboard extends Component {
     } else {
       const categoryData = [];
       const ownerData = [];
-
-      const chartData = [
-        {
-          category: "Rent",
-          payment: 0,
-          expected: 1200,
-        },
-        {
-          category: "Charity",
-          payment: 0,
-          expected: 1200,
-        },
-        {
-          category: "Electricity",
-          payment: 0,
-          expected: 100,
-        },
-        {
-          category: "Internet",
-          payment: 0,
-          expected: 40,
-        },
-        {
-          category: "Insurance",
-          payment: 0,
-          expected: 75,
-        },
-        {
-          category: "Expenses",
-          payment: 0,
-          expected: 285,
-        },
-        {
-          category: "Fuel",
-          payment: 0,
-          expected: 100,
-        },
-      ];
+      let totalPayments = 0;
+      const chartData = [];
 
       if (
         this.state.owners.length > 0 &&
         this.state.categories.length > 0 &&
         this.state.payments.length > 0
       ) {
-        this.state.payments
-          .map((obj) => ({
-            ...obj,
-            CategoryName: this.state.categories.find(
-              (x) => x.collectionId == obj.Category
-            ).collectionName,
-          }))
-          .reduce(function (res, value) {
-            if (!res[value.CategoryName]) {
-              res[value.CategoryName] = {
-                argument: value.CategoryName,
-                value: value.Amount,
-              };
-              categoryData.push(res[value.CategoryName]);
-            }
-            res[value.CategoryName].Amount =
-              Number(value.Amount) +
-              (res[value.CategoryName].Amount
-                ? Number(res[value.CategoryName].Amount)
-                : 0);
-            res[value.CategoryName].value = res[value.CategoryName].Amount;
-            return res;
-          }, {});
-
-        this.state.payments
+        this.state.selectedPayments
           .map((obj) => ({
             ...obj,
             CategoryName: this.state.categories.find(
@@ -521,7 +411,7 @@ class Dashboard extends Component {
             return res;
           }, {});
 
-        this.state.payments
+        this.state.selectedPayments
           .map((obj) => ({
             ...obj,
             OwnerName: this.state.owners.find(
@@ -531,7 +421,7 @@ class Dashboard extends Component {
           .reduce(function (res, value) {
             if (!res[value.OwnerName]) {
               res[value.OwnerName] = {
-                argument: value.OwnerName,
+                owner: value.OwnerName,
                 value: value.Amount,
               };
               ownerData.push(res[value.OwnerName]);
@@ -542,131 +432,201 @@ class Dashboard extends Component {
                 ? Number(res[value.OwnerName].Amount)
                 : 0);
             res[value.OwnerName].value = res[value.OwnerName].Amount;
+            res[value.OwnerName].expected = 1750;
             return res;
           }, {});
+
+        console.log(ownerData);
+
+        totalPayments = this.state.selectedPayments.reduce(
+          (accumulator, value) => {
+            return accumulator + parseFloat(value.Amount);
+          },
+          0
+        );
       }
-
-      const expectedData = [
-        { argument: "Food", value: 500 },
-        { argument: "Rent", value: 1200 },
-        { argument: "Electricity", value: 100 },
-        { argument: "Internet", value: 40 },
-        { argument: "Charity", value: 1200 },
-        { argument: "Fuel", value: 100 },
-        { argument: "Insurance", value: 75 },
-        { argument: "Expenses", value: 285 },
-      ];
       return (
-        <main style={{ width: 1200, padding: 24 }}>
+        <div>
           <div className={classes.toolbar} />
-
-          <TableContainer component={Paper} style={{ marginBottom: 20 }}>
-            <Table sx={{ minWidth: 650 }} aria-label="a dense table">
-              <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <Paper>
-                      <Chart data={chartData}>
-                        <ArgumentAxis />
-                        <ValueAxis max={2400} />
-
-                        <BarSeries
-                          name="Payment"
-                          valueField="payment"
-                          argumentField="category"
-                        />
-                        <BarSeries
-                          name="Expected"
-                          valueField="expected"
-                          argumentField="category"
-                        />
-                        <Animation />
-                        <Legend />
-                        <EventTracker />
-                        <Tooltip />
-                        <HoverState />
-                        <Title text="Payments Vs Expected payments in Oct 2021" />
-                        <Stack />
-                      </Chart>
-                    </Paper>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TableContainer component={Paper} style={{ marginBottom: 20 }}>
-            <Table sx={{ minWidth: 650 }} aria-label="a dense table">
-              <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <Chart
-                      data={categoryData}
-                      height={400}
-                      width={400}
-                      options={{
-                        legend: { visible: true, position: "right" },
-                      }}
-                    >
-                      <PieSeries valueField="value" argumentField="argument" />
-                      <Title text="Payments per category" />
-                      <Animation />
-                      <Legend />
-                      <EventTracker />
-                      <Tooltip />
-                      <HoverState />
-                    </Chart>
-                  </TableCell>
-                  <TableCell>
-                    <Chart
-                      data={ownerData}
-                      height={400}
-                      width={400}
-                      options={{
-                        legend: { visible: true, position: "right" },
-                      }}
-                    >
-                      <PieSeries valueField="value" argumentField="argument" />
-                      <Title text="Payments per Action Taker" />
-                      <Animation />
-                      <Legend />
-                      <EventTracker />
-                      <Tooltip />
-                      <HoverState />
-                    </Chart>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Dialog
-            onClose={handleViewClose}
-            aria-labelledby="customized-dialog-title"
-            open={viewOpen}
-            fullWidth
-            classes={{ paperFullWidth: classes.dialogeStyle }}
-          >
-            <DialogTitle id="customized-dialog-title" onClose={handleViewClose}>
-              {this.state.title}
-            </DialogTitle>
-            <DialogContent dividers>
-              <TextField
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4} className={classes.inputcontainer}>
+              <Select
+                variant="outlined"
+                required
                 fullWidth
-                id="todoDetails"
-                name="body"
-                multiline
-                readonly
-                rows={1}
-                rowsMax={25}
-                value={this.state.body}
-                InputProps={{
-                  disableUnderline: true,
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        </main>
+                id="paymentMonth"
+                label="paymentMonth"
+                name="paymentMonth"
+                autoComplete="paymentMonth"
+                helperText={errors.paymentMonth}
+                value={this.state.selectedMonth}
+                onChange={this.handleMonthChange}
+              >
+                {this.renderMonthOptions()}
+              </Select>
+            </Grid>
+            <Grid item xs={12} md={3} className={classes.inputcontainer}>
+              <Select
+                variant="outlined"
+                required
+                fullWidth
+                id="paymentYear"
+                label="paymentYear"
+                name="paymentYear"
+                autoComplete="paymentYear"
+                helperText={errors.paymentYear}
+                value={this.state.selectedYear}
+                onChange={this.handleYearChange}
+              >
+                {this.renderYearOptions()}
+              </Select>
+            </Grid>
+            <Grid item xs={12} md={5} className={classes.inputcontainer}>
+              <Select
+                variant="outlined"
+                required
+                fullWidth
+                id="paymentChart"
+                label="paymentChart"
+                name="paymentChart"
+                autoComplete="paymentChart"
+                helperText={errors.paymentChart}
+                value={this.state.selectedChart}
+                onChange={this.handleChartChange}
+              >
+                {this.renderChartOptions()}
+              </Select>
+            </Grid>
+          </Grid>
+          {this.state.selectedChart === 0 && (
+            <Paper>
+              <Chart data={chartData}>
+                <ArgumentAxis />
+                <ValueAxis />
+
+                <BarSeries
+                  name="Actual Payments"
+                  valueField="payment"
+                  argumentField="category"
+                  color="orange"
+                />
+                <BarSeries
+                  name="Expected Payments"
+                  valueField="expected"
+                  argumentField="category"
+                  color="green"
+                />
+                <Animation />
+                <Legend
+                  position="bottom"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <h4 style={{ textAlign: "center" }}>
+                  {" "}
+                  Payments vs Expected per Category Total: {totalPayments}{" "}
+                </h4>
+                <Stack />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+          {this.state.selectedChart === 1 && (
+            <Paper>
+              <Chart data={ownerData}>
+                <ArgumentAxis />
+                <ValueAxis />
+
+                <BarSeries
+                  name="Actual Payments"
+                  valueField="value"
+                  argumentField="owner"
+                  color="orange"
+                />
+                <BarSeries
+                  name="Expected Payments"
+                  valueField="expected"
+                  argumentField="owner"
+                  color="green"
+                />
+                <Animation />
+                <Legend
+                  position="bottom"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <Title text="Actual Payment vs Expected Payment per owner" />
+                <Stack />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+          {this.state.selectedChart === 2 && (
+            <Paper>
+              <Chart data={chartData}>
+                <PieSeries valueField="payment" argumentField="category" />
+                <Legend
+                  position="left"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <Title text="Payments per category" />
+                <Animation />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+          {this.state.selectedChart === 3 && (
+            <Paper>
+              <Chart data={ownerData}>
+                <PieSeries valueField="value" argumentField="owner" />
+                <Legend
+                  position="left"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <Title text="Payments per owner" />
+                <Animation />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+          {this.state.selectedChart === 4 && (
+            <Paper>
+              <Chart data={chartData}>
+                <ArgumentAxis />
+                <ValueAxis />
+
+                <BarSeries
+                  name="Actual Payments"
+                  valueField="payment"
+                  argumentField="owner"
+                  color="orange"
+                />
+                <BarSeries
+                  name="Expected Payments"
+                  valueField="expected"
+                  argumentField="owner"
+                  color="green"
+                />
+                <Animation />
+                <Legend
+                  position="bottom"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <Title text="Actual Payment vs Expected Payment per category" />
+                <Stack />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+        </div>
       );
     }
   }
