@@ -71,15 +71,8 @@ const styles = (theme) => ({
     top: 14,
     right: 10,
   },
-  form: {
-    width: "98%",
-    marginLeft: 13,
-    marginTop: theme.spacing(10),
-  },
+  form: {},
   toolbar: theme.mixins.toolbar,
-  root: {
-    minWidth: 470,
-  },
   bullet: {
     display: "inline-block",
     margin: "0 2px",
@@ -95,9 +88,6 @@ const styles = (theme) => ({
     width: "31px",
     left: "50%",
     top: "35%",
-  },
-  dialogeStyle: {
-    maxWidth: "50%",
   },
   viewRoot: {
     margin: 0,
@@ -581,7 +571,7 @@ class todo extends Component {
         <div>
           <div className={classes.toolbar} />
 
-          <div className="row">
+          <div style={{ marginTop: "10px" }} className="row">
             <div
               className="col-md-3 col-sm-6 col-xs-12"
               style={{ display: "flex", justifyContent: "center" }}
@@ -674,7 +664,7 @@ class todo extends Component {
             </AppBar>
 
             <form className={classes.form} noValidate>
-              <Grid container spacing={2}>
+              <Grid>
                 <Grid item xs={12}>
                   <Select
                     variant="outlined"
@@ -741,56 +731,58 @@ class todo extends Component {
             </form>
           </Dialog>
 
-          <Paper className="container">
-            <Table aria-label="a dense table">
-              <TableHead>
-                <TableRow>
-                  <TableCell align="right">Date</TableCell>
-                  <TableCell align="right">Owner</TableCell>
-                  <TableCell align="right">Description</TableCell>
-                  <TableCell align="right">Category</TableCell>
-                  <TableCell align="right">Amount</TableCell>
-                  <TableCell align="right">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {this.state.selectedPayments.map((payment) => (
+          <div className="row" style={{ paddingLeft: "400px" }}>
+            <Paper>
+              <Table aria-label="a dense table">
+                <TableHead>
                   <TableRow>
-                    <TableCell align="right">
-                      {new Date(payment.TransactionDate).toLocaleDateString(
-                        "en-US"
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {this.state.owners.length > 0
-                        ? this.state.owners.find(
-                            (x) => x.ownerId == payment.TransactionBy
-                          ).ownerName
-                        : ""}
-                    </TableCell>
-                    <TableCell align="right">{payment.Description}</TableCell>
-                    <TableCell align="right">
-                      {this.state.categories.length > 0
-                        ? this.state.categories.find(
-                            (x) => x.collectionId == payment.Category
-                          ).collectionName
-                        : ""}
-                    </TableCell>
-                    <TableCell align="right">{payment.Amount}</TableCell>
-                    <TableCell align="right">
-                      <Button
-                        size="small"
-                        color="primary"
-                        onClick={() => this.deleteTodoHandler({ payment })}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
+                    <TableCell align="right">Date</TableCell>
+                    <TableCell align="right">Owner</TableCell>
+                    <TableCell align="right">Description</TableCell>
+                    <TableCell align="right">Category</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                    <TableCell align="right">Action</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
+                </TableHead>
+                <TableBody>
+                  {this.state.selectedPayments.map((payment) => (
+                    <TableRow>
+                      <TableCell align="right">
+                        {new Date(payment.TransactionDate).toLocaleDateString(
+                          "en-US"
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {this.state.owners.length > 0
+                          ? this.state.owners.find(
+                              (x) => x.ownerId == payment.TransactionBy
+                            ).ownerName
+                          : ""}
+                      </TableCell>
+                      <TableCell align="right">{payment.Description}</TableCell>
+                      <TableCell align="right">
+                        {this.state.categories.length > 0
+                          ? this.state.categories.find(
+                              (x) => x.collectionId == payment.Category
+                            ).collectionName
+                          : ""}
+                      </TableCell>
+                      <TableCell align="right">{payment.Amount}</TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          color="primary"
+                          onClick={() => this.deleteTodoHandler({ payment })}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          </div>
 
           <Dialog
             onClose={handleViewClose}

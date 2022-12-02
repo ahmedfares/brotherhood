@@ -504,7 +504,7 @@ class Dashboard extends Component {
       return (
         <div>
           <div className={classes.toolbar} />
-          <Grid container spacing={2}>
+          <Grid style={{ marginTop: "10px" }} container spacing={2}>
             <Grid item xs={12} md={4} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
