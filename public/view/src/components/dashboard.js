@@ -27,6 +27,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { authMiddleWare } from "../util/auth";
+import { blue } from "@material-ui/core/colors";
 
 const Root = (props) => (
   <Legend.Root
@@ -376,22 +377,23 @@ class Dashboard extends Component {
       const categoryData = [];
       const ownerData = [];
       const monthData = [];
+      let monthBarData = [];
       let totalPayments = 0;
       const chartData = [];
 
       const months = [
-        "January",
-        "February",
-        "March",
+        "Jan",
+        "Feb",
+        "Mar",
         "April",
         "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
       ];
 
       if (
@@ -489,7 +491,7 @@ class Dashboard extends Component {
             res[value.MonthName].value = res[value.MonthName].Amount;
             return res;
           }, {});
-
+        monthData.reverse();
         console.log(monthData);
 
         totalPayments = this.state.selectedPayments.reduce(
@@ -659,7 +661,9 @@ class Dashboard extends Component {
                   name="Actual Payments"
                   valueField="value"
                   argumentField="Month"
+                  color="#3F51B5"
                 />
+
                 <Animation />
                 <Legend
                   position="bottom"
@@ -683,6 +687,7 @@ class Dashboard extends Component {
                   name="Actual Payments"
                   valueField="value"
                   argumentField="Month"
+                  color="#3F51B5"
                 />
                 <Animation />
                 <Legend
