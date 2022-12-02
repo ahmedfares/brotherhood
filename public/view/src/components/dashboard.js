@@ -12,6 +12,7 @@ import {
   ArgumentAxis,
   ValueAxis,
   BarSeries,
+  LineSeries,
   Tooltip,
 } from "@devexpress/dx-react-chart-material-ui";
 import { EventTracker, HoverState } from "@devexpress/dx-react-chart";
@@ -105,6 +106,7 @@ class Dashboard extends Component {
       todos: [],
       payments: [],
       selectedPayments: [],
+      yearPayments: [],
       paymentBy: "",
       description: "",
       category: "",
@@ -176,16 +178,26 @@ class Dashboard extends Component {
   };
 
   handleDateSelectChange = () => {
-    this.setState({
-      selectedPayments: this.state.payments.filter(
-        (x) =>
-          (new Date(x.TransactionDate).getMonth() + 1 ===
-            this.state.selectedMonth ||
-            this.state.selectedMonth === 0) &&
-          new Date(x.TransactionDate).getFullYear() - 2020 ===
+    this.setState(
+      {
+        selectedPayments: this.state.payments.filter(
+          (x) =>
+            (new Date(x.TransactionDate).getMonth() + 1 ===
+              this.state.selectedMonth ||
+              this.state.selectedMonth === 0) &&
+            new Date(x.TransactionDate).getFullYear() - 2020 ===
+              this.state.selectedYear
+        ),
+        yearPayments: this.state.payments.filter(
+          (x) =>
+            new Date(x.TransactionDate).getFullYear() - 2020 ===
             this.state.selectedYear
-      ),
-    });
+        ),
+      },
+      () => {
+        console.log(this.state.yearPayments);
+      }
+    );
   };
 
   componentWillMount = () => {
@@ -329,6 +341,8 @@ class Dashboard extends Component {
       { Id: 1, chartName: "Owners Chart 1" },
       { Id: 2, chartName: "Categories Chart 2" },
       { Id: 3, chartName: "Owners Chart 2" },
+      { Id: 4, chartName: "Month Chart 1" },
+      { Id: 5, chartName: "Month Chart 2" },
     ];
     return chartSelect.map((dt, i) => {
       return (
@@ -361,8 +375,24 @@ class Dashboard extends Component {
     } else {
       const categoryData = [];
       const ownerData = [];
+      const monthData = [];
       let totalPayments = 0;
       const chartData = [];
+
+      const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
 
       if (
         this.state.owners.length > 0 &&
@@ -436,7 +466,31 @@ class Dashboard extends Component {
             return res;
           }, {});
 
-        console.log(ownerData);
+        this.state.yearPayments
+          .map((obj) => ({
+            ...obj,
+            MonthName: months.find(
+              (x, index) => index == new Date(obj.TransactionDate).getMonth()
+            ),
+          }))
+          .reduce(function (res, value) {
+            if (!res[value.MonthName]) {
+              res[value.MonthName] = {
+                Month: value.MonthName,
+                value: value.Amount,
+              };
+              monthData.push(res[value.MonthName]);
+            }
+            res[value.MonthName].Amount =
+              Number(value.Amount) +
+              (res[value.MonthName].Amount
+                ? Number(res[value.MonthName].Amount)
+                : 0);
+            res[value.MonthName].value = res[value.MonthName].Amount;
+            return res;
+          }, {});
+
+        console.log(monthData);
 
         totalPayments = this.state.selectedPayments.reduce(
           (accumulator, value) => {
@@ -597,21 +651,38 @@ class Dashboard extends Component {
           )}
           {this.state.selectedChart === 4 && (
             <Paper>
-              <Chart data={chartData}>
+              <Chart data={monthData}>
                 <ArgumentAxis />
                 <ValueAxis />
 
                 <BarSeries
                   name="Actual Payments"
-                  valueField="payment"
-                  argumentField="owner"
-                  color="orange"
+                  valueField="value"
+                  argumentField="Month"
                 />
-                <BarSeries
-                  name="Expected Payments"
-                  valueField="expected"
-                  argumentField="owner"
-                  color="green"
+                <Animation />
+                <Legend
+                  position="bottom"
+                  rootComponent={Root}
+                  labelComponent={Label}
+                />
+                <Title text="Actual Payment vs Expected Payment per category" />
+                <Stack />
+                <EventTracker />
+                <Tooltip />
+              </Chart>
+            </Paper>
+          )}
+          {this.state.selectedChart === 5 && (
+            <Paper>
+              <Chart data={monthData}>
+                <ArgumentAxis />
+                <ValueAxis />
+
+                <LineSeries
+                  name="Actual Payments"
+                  valueField="value"
+                  argumentField="Month"
                 />
                 <Animation />
                 <Legend

@@ -578,7 +578,7 @@ class todo extends Component {
         { argument: "Expenses", value: 285 },
       ];
       return (
-        <main style={{ width: "100%", padding: 24 }}>
+        <div>
           <div className={classes.toolbar} />
 
           <div className="row">
@@ -792,36 +792,6 @@ class todo extends Component {
             </Table>
           </Paper>
 
-          {/* <table className="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">First</th>
-                <th scope="col">Last</th>
-                <th scope="col">Handle</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">1</th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              <tr>
-                <th scope="row">2</th>
-                <td>Jacob</td>
-                <td>Thornton</td>
-                <td>@fat</td>
-              </tr>
-              <tr>
-                <th scope="row">3</th>
-                <td colspan="2">Larry the Bird</td>
-                <td>@twitter</td>
-              </tr>
-            </tbody>
-          </table> */}
-
           <Dialog
             onClose={handleViewClose}
             aria-labelledby="customized-dialog-title"
@@ -848,7 +818,7 @@ class todo extends Component {
               />
             </DialogContent>
           </Dialog>
-        </main>
+        </div>
       );
     }
   }
