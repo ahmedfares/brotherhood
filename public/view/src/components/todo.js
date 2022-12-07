@@ -71,7 +71,9 @@ const styles = (theme) => ({
     top: 14,
     right: 10,
   },
-  form: {},
+  form: {
+    marginTop: 70,
+  },
   toolbar: theme.mixins.toolbar,
   bullet: {
     display: "inline-block",

@@ -26,6 +26,7 @@ import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import CircularProgress from "@material-ui/core/CircularProgress";
 
 import { authMiddleWare } from "../util/auth";
+import Payments from "../components/payments";
 
 const drawerWidth = 240;
 
@@ -64,15 +65,6 @@ const styles = (theme) => ({
     flexGrow: 0,
     marginTop: 20,
   },
-  uiProgess: {
-    position: "fixed",
-    zIndex: "1000",
-    height: "31px",
-    width: "31px",
-    left: "50%",
-    top: "35%",
-  },
-  toolbar: theme.mixins.toolbar,
 });
 
 class home extends Component {
@@ -152,7 +144,7 @@ class home extends Component {
       return (
         <div className={classes.root}>
           {this.state.uiLoading && (
-            <CircularProgress size={150} className={classes.uiProgess} />
+            <CircularProgress size={50} className={classes.uiProgess} />
           )}
         </div>
       );
@@ -238,7 +230,7 @@ class home extends Component {
             {this.state.render == 1 ? (
               <Account />
             ) : this.state.render == 0 ? (
-              <Todo />
+              <Payments />
             ) : (
               <Dashboard />
             )}

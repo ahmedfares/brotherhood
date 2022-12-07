@@ -7,6 +7,7 @@ import Select from "@material-ui/core/Select";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import { Stack, Animation } from "@devexpress/dx-react-chart";
 import Paper from "@material-ui/core/Paper";
+import Button from "@material-ui/core/Button";
 import {
   Legend,
   ArgumentAxis,
@@ -28,6 +29,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { authMiddleWare } from "../util/auth";
 import { blue } from "@material-ui/core/colors";
+import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 
 const Root = (props) => (
   <Legend.Root
@@ -43,8 +45,15 @@ const styles = (theme) => ({
   inputcontainer: {
     margin: "0 auto",
   },
-  Paper: {
-    marginTop: "10px",
+  card: {
+    borderRadius: "5px",
+    marginBottom: "10px",
+    boxShadow:
+      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)",
+    backgroundColor: "#eee",
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "20px",
   },
   content: {
     flexGrow: 1,
@@ -102,7 +111,7 @@ const styles = (theme) => ({
   },
 });
 
-class Dashboard extends Component {
+class Payments extends Component {
   constructor(props) {
     super(props);
 
@@ -508,6 +517,15 @@ class Dashboard extends Component {
         <div>
           <div className={classes.toolbar} />
           <Grid style={{ marginTop: "10px" }} container spacing={2}>
+            <Grid item xs={11} md={5} className={classes.inputcontainer}>
+              <button
+                className="btn btn-primary"
+                aria-label="Add Payment"
+                style={{ width: "100%" }}
+              >
+                Add Payment
+              </button>
+            </Grid>
             <Grid item xs={11} md={4} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
@@ -540,175 +558,86 @@ class Dashboard extends Component {
                 {this.renderYearOptions()}
               </Select>
             </Grid>
-            <Grid item xs={11} md={5} className={classes.inputcontainer}>
-              <Select
-                variant="outlined"
-                required
-                fullWidth
-                id="paymentChart"
-                label="paymentChart"
-                name="paymentChart"
-                autoComplete="paymentChart"
-                helperText={errors.paymentChart}
-                value={this.state.selectedChart}
-                onChange={this.handleChartChange}
-              >
-                {this.renderChartOptions()}
-              </Select>
+          </Grid>
+
+          <Grid style={{ marginTop: "10px" }} container spacing={2}>
+            <Grid item xs={11} md={11} className={classes.inputcontainer}>
+              {false &&
+                this.state.selectedPayments.map((payment) => (
+                  <div className={classes.inputcontainer}>
+                    {new Date(payment.TransactionDate).toLocaleDateString(
+                      "en-US"
+                    )}
+
+                    {this.state.owners.length > 0
+                      ? this.state.owners.find(
+                          (x) => x.ownerId == payment.TransactionBy
+                        ).ownerName
+                      : ""}
+
+                    {this.state.categories.length > 0
+                      ? this.state.categories.find(
+                          (x) => x.collectionId == payment.Category
+                        ).collectionName
+                      : ""}
+
+                    {payment.Amount}
+
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => this.deleteTodoHandler({ payment })}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+
+              {this.state.selectedPayments.map((payment) => (
+                <div className={classes.card}>
+                  <div>
+                    <b>
+                      {this.state.owners.length > 0
+                        ? this.state.owners.find(
+                            (x) => x.ownerId == payment.TransactionBy
+                          ).ownerName
+                        : ""}
+                    </b>{" "}
+                    -{" "}
+                    {new Date(payment.TransactionDate).toLocaleDateString(
+                      "en-US"
+                    )}{" "}
+                    <br />
+                    {payment.Description} <br />
+                    <b>
+                      {this.state.categories.length > 0
+                        ? this.state.categories.find(
+                            (x) => x.collectionId == payment.Category
+                          ).collectionName
+                        : ""}
+                    </b>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "30px", color: "green" }}>
+                      {payment.Amount}
+                    </div>
+
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => this.deleteTodoHandler({ payment })}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </Grid>
           </Grid>
-          {this.state.selectedChart === 0 && (
-            <Paper className={classes.Paper}>
-              <Chart data={chartData}>
-                <ArgumentAxis />
-                <ValueAxis />
-
-                <BarSeries
-                  name="Actual Payments"
-                  valueField="payment"
-                  argumentField="category"
-                  color="orange"
-                />
-                <BarSeries
-                  name="Expected Payments"
-                  valueField="expected"
-                  argumentField="category"
-                  color="green"
-                />
-                <Animation />
-                <Legend
-                  position="bottom"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <h4 style={{ textAlign: "center" }}>
-                  {" "}
-                  Payments vs Expected per Category Total: {totalPayments}{" "}
-                </h4>
-                <Stack />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
-          {this.state.selectedChart === 1 && (
-            <Paper className={classes.Paper}>
-              <Chart data={ownerData}>
-                <ArgumentAxis />
-                <ValueAxis />
-
-                <BarSeries
-                  name="Actual Payments"
-                  valueField="value"
-                  argumentField="owner"
-                  color="orange"
-                />
-                <BarSeries
-                  name="Expected Payments"
-                  valueField="expected"
-                  argumentField="owner"
-                  color="green"
-                />
-                <Animation />
-                <Legend
-                  position="bottom"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <Title text="Actual Payment vs Expected Payment per owner" />
-                <Stack />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
-          {this.state.selectedChart === 2 && (
-            <Paper className={classes.Paper}>
-              <Chart data={chartData}>
-                <PieSeries valueField="payment" argumentField="category" />
-                <Legend
-                  position="left"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <Title text="Payments per category" />
-                <Animation />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
-          {this.state.selectedChart === 3 && (
-            <Paper className={classes.Paper}>
-              <Chart data={ownerData}>
-                <PieSeries valueField="value" argumentField="owner" />
-                <Legend
-                  position="left"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <Title text="Payments per owner" />
-                <Animation />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
-          {this.state.selectedChart === 4 && (
-            <Paper className={classes.Paper}>
-              <Chart data={monthData}>
-                <ArgumentAxis />
-                <ValueAxis />
-
-                <BarSeries
-                  name="Actual Payments"
-                  valueField="value"
-                  argumentField="Month"
-                  color="#3F51B5"
-                />
-
-                <Animation />
-                <Legend
-                  position="bottom"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <Title text="Actual Payment vs Expected Payment per category" />
-                <Stack />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
-          {this.state.selectedChart === 5 && (
-            <Paper className={classes.Paper}>
-              <Chart data={monthData}>
-                <ArgumentAxis />
-                <ValueAxis />
-
-                <LineSeries
-                  name="Actual Payments"
-                  valueField="value"
-                  argumentField="Month"
-                  color="#3F51B5"
-                />
-                <Animation />
-                <Legend
-                  position="bottom"
-                  rootComponent={Root}
-                  labelComponent={Label}
-                />
-                <Title text="Actual Payment vs Expected Payment per category" />
-                <Stack />
-                <EventTracker />
-                <Tooltip />
-              </Chart>
-            </Paper>
-          )}
         </div>
       );
     }
   }
 }
 
-export default withStyles(styles)(Dashboard);
+export default withStyles(styles)(Payments);
