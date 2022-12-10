@@ -45,6 +45,7 @@ const styles = (theme) => ({
   },
   Paper: {
     marginTop: "10px",
+    padding: "10px",
   },
   content: {
     flexGrow: 1,
@@ -85,7 +86,7 @@ const styles = (theme) => ({
     height: "31px",
     width: "31px",
     left: "50%",
-    top: "35%",
+    top: "50%",
   },
   dialogeStyle: {
     maxWidth: "50%",
@@ -508,7 +509,7 @@ class Dashboard extends Component {
         <div>
           <div className={classes.toolbar} />
           <Grid style={{ marginTop: "10px" }} container spacing={2}>
-            <Grid item xs={11} md={4} className={classes.inputcontainer}>
+            <Grid item xs={12} md={4} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
                 required
@@ -524,7 +525,7 @@ class Dashboard extends Component {
                 {this.renderMonthOptions()}
               </Select>
             </Grid>
-            <Grid item xs={11} md={3} className={classes.inputcontainer}>
+            <Grid item xs={12} md={3} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
                 required
@@ -540,7 +541,7 @@ class Dashboard extends Component {
                 {this.renderYearOptions()}
               </Select>
             </Grid>
-            <Grid item xs={11} md={5} className={classes.inputcontainer}>
+            <Grid item xs={12} md={5} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
                 required

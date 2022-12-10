@@ -94,7 +94,7 @@ const styles = (theme) => ({
     height: "31px",
     width: "31px",
     left: "50%",
-    top: "35%",
+    top: "50%",
   },
   dialogeStyle: {
     maxWidth: "50%",
@@ -171,6 +171,10 @@ class Payments extends Component {
         this.handleDateSelectChange();
       }
     );
+  };
+
+  handleClickOpen = (event) => {
+    this.props.createPayment();
   };
 
   handleChartChange = (event) => {
@@ -348,6 +352,38 @@ class Payments extends Component {
     });
   }
 
+  deleteTodoHandler(data) {
+    if (window.confirm("Are you sure you want to delete this item ?")) {
+      authMiddleWare(this.props.history);
+      const authToken = localStorage.getItem("AuthToken");
+      axios.defaults.headers.common = { Authorization: `${authToken}` };
+      let paymentId = data.payment.paymentId;
+      axios
+        .delete(
+          `https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`
+        )
+        .then(() => {
+          axios
+            .get(
+              "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments"
+            )
+            .then((response) => {
+              this.setState({
+                selectedPayments: response.data,
+                Payments: response.data,
+                uiLoading: false,
+              });
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  }
+
   renderChartOptions() {
     var chartSelect = [
       { Id: 0, chartName: "Categories Chart 1" },
@@ -517,16 +553,17 @@ class Payments extends Component {
         <div>
           <div className={classes.toolbar} />
           <Grid style={{ marginTop: "10px" }} container spacing={2}>
-            <Grid item xs={11} md={5} className={classes.inputcontainer}>
+            <Grid item xs={12} md={3} className={classes.inputcontainer}>
               <button
                 className="btn btn-primary"
                 aria-label="Add Payment"
                 style={{ width: "100%" }}
+                onClick={this.handleClickOpen}
               >
                 Add Payment
               </button>
             </Grid>
-            <Grid item xs={11} md={4} className={classes.inputcontainer}>
+            <Grid item xs={12} md={5} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
                 required
@@ -542,7 +579,7 @@ class Payments extends Component {
                 {this.renderMonthOptions()}
               </Select>
             </Grid>
-            <Grid item xs={11} md={3} className={classes.inputcontainer}>
+            <Grid item xs={12} md={4} className={classes.inputcontainer}>
               <Select
                 variant="outlined"
                 required
@@ -561,7 +598,7 @@ class Payments extends Component {
           </Grid>
 
           <Grid style={{ marginTop: "10px" }} container spacing={2}>
-            <Grid item xs={11} md={11} className={classes.inputcontainer}>
+            <Grid item xs={12} md={11} className={classes.inputcontainer}>
               {false &&
                 this.state.selectedPayments.map((payment) => (
                   <div className={classes.inputcontainer}>

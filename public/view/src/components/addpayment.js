@@ -15,6 +15,8 @@ import {
   Avatar,
 } from "@material-ui/core";
 
+import Select, { SelectChangeEvent } from "@material-ui/core/Select";
+
 import clsx from "clsx";
 
 import axios from "axios";
@@ -76,21 +78,23 @@ const styles = (theme) => ({
   },
 });
 
-class account extends Component {
+class addpayment extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
+      amount: "",
+      selectedCategory: "",
+      selectedOwner: 0,
+      description: "",
       username: "",
       country: "",
       profilePicture: "",
       uiLoading: true,
       buttonLoading: false,
       imageError: "",
+      owners: [],
+      categories: [],
     };
   }
 
@@ -119,6 +123,34 @@ class account extends Component {
         console.log(error);
         this.setState({ errorMsg: "Error in retrieving the data" });
       });
+
+    axios
+      .get(
+        "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/owners"
+      )
+      .then((response) => {
+        this.setState({
+          owners: response.data,
+          uiLoading: false,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    axios
+      .get(
+        "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/collections"
+      )
+      .then((response) => {
+        this.setState({
+          categories: response.data,
+          uiLoading: false,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   handleChange = (event) => {
@@ -131,6 +163,61 @@ class account extends Component {
     this.setState({
       image: event.target.files[0],
     });
+  };
+
+  handleSubmit = (event) => {
+    authMiddleWare(this.props.history);
+    event.preventDefault();
+    const userTodo = {
+      title: this.state.title,
+      body: this.state.body,
+    };
+    this.setState({ uiLoading: true });
+    const userPayment = {
+      TransactionBy: this.state.selectedOwner,
+      Category: this.state.selectedCategory,
+      Description: this.state.description,
+      Amount: this.state.amount,
+    };
+    let options = {};
+    if (this.state.buttonType === "Edit") {
+      options = {
+        url: `https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${this.state.todoId}`,
+        method: "put",
+        data: userPayment,
+      };
+    } else {
+      options = {
+        url: "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment",
+        method: "post",
+        data: userPayment,
+      };
+    }
+    const authToken = localStorage.getItem("AuthToken");
+    axios.defaults.headers.common = { Authorization: `${authToken}` };
+    axios(options)
+      .then(() => {
+        this.setState({ open: false });
+
+        authMiddleWare(this.props.history);
+        const authToken = localStorage.getItem("AuthToken");
+        axios.defaults.headers.common = { Authorization: `${authToken}` };
+        axios
+          .get(
+            "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments"
+          )
+          .then((response) => {
+            this.props.loadPayment();
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+        //window.location.reload();
+      })
+      .catch((error) => {
+        this.setState({ open: true, errors: error.response.data });
+        console.log(error);
+      });
   };
 
   profilePictureHandler = (event) => {
@@ -168,6 +255,47 @@ class account extends Component {
         });
       });
   };
+
+  renderCategoryOptions() {
+    var categorySelect = [
+      ...[{ collectionId: 0, collectionName: "Select a Category" }],
+      ...this.state.categories,
+    ];
+    return categorySelect.map((dt, i) => {
+      //console.log(dt);
+      return (
+        <option
+          label={dt.collectionName}
+          value={dt.collectionId}
+          key={i}
+          name={dt.collectionName}
+        >
+          {dt.collectionName}
+        </option>
+      );
+    });
+  }
+
+  renderOwnerOptions() {
+    if (this.state.owners)
+      var categorySelect = [
+        ...[{ ownerId: 0, ownerName: "Select Owner" }],
+        ...this.state.owners,
+      ];
+    return categorySelect.map((dt, i) => {
+      //console.log(dt);
+      return (
+        <option
+          label={dt.ownerName}
+          value={dt.ownerId}
+          key={i}
+          name={dt.ownerName}
+        >
+          {dt.ownerName}
+        </option>
+      );
+    });
+  }
 
   updateFormValues = (event) => {
     event.preventDefault();
@@ -216,40 +344,6 @@ class account extends Component {
           <div className={classes.toolbar} />
           <div className="row">
             <div className="col-md-1 col-sm-12 col-xs-12"></div>
-            <div className="col-md-4 col-sm-12 col-xs-12">
-              <Card className={classes.row}>
-                <CardContent>
-                  <div class="card-body text-center">
-                    <img
-                      src={sessionStorage.getItem("profilePicture")}
-                      alt="avatar"
-                      class="rounded-circle img-fluid"
-                      style={{ width: "150px" }}
-                    ></img>
-                    <h5 class="my-3">
-                      {this.state.firstName} {this.state.lastName}
-                    </h5>
-                    <p class="text-muted mb-1">{this.state.email}</p>
-                    <p class="text-muted mb-4">{this.state.phoneNumber}</p>
-                    <input
-                      type="file"
-                      class="form-control"
-                      onChange={this.handleImageChange}
-                    />
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      style={{ "margin-top": "10px" }}
-                      onClick={this.profilePictureHandler}
-                    >
-                      Upload Photo
-                    </button>
-                  </div>
-                  <div className={classes.progress} />
-                </CardContent>
-                <Divider />
-              </Card>
-            </div>
             <div className="col-md-6 col-sm-12 col-xs-12">
               <Card {...rest} className={clsx(classes.root, classes)}>
                 <form autoComplete="off" noValidate>
@@ -257,75 +351,64 @@ class account extends Component {
                   <CardContent>
                     <Grid container spacing={3}>
                       <Grid item md={4} xs={4}>
-                        <p class="mb-0">First Name</p>
+                        <p class="mb-0">Owner</p>
+                      </Grid>
+                      <Grid item md={8} xs={8}>
+                        <select
+                          class="form-select"
+                          aria-label="Default select example"
+                          onChange={(event) =>
+                            this.setState({
+                              selectedOwner: event.target.value,
+                            })
+                          }
+                          value={this.state.selectedOwner}
+                        >
+                          {this.renderOwnerOptions()}
+                        </select>
+                      </Grid>
+                      <Grid item md={4} xs={4}>
+                        <p class="mb-0">Description</p>
                       </Grid>
                       <Grid item md={8} xs={8}>
                         <input
                           type="text"
-                          name="firstName"
-                          value={this.state.firstName}
-                          onChange={this.handleChange}
+                          name="Description"
+                          onChange={(event) =>
+                            this.setState({ description: event.target.value })
+                          }
+                          value={this.state.description}
                           className="form-control"
                         />
                       </Grid>
                       <Grid item md={4} xs={4}>
-                        <p class="mb-0">Last Name</p>
+                        <p class="mb-0">Category</p>
                       </Grid>
                       <Grid item md={8} xs={8}>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={this.state.lastName}
-                          onChange={this.handleChange}
-                          className="form-control"
-                        />
+                        <select
+                          class="form-select"
+                          aria-label="Default select example"
+                          onChange={(event) =>
+                            this.setState({
+                              selectedCategory: event.target.value,
+                            })
+                          }
+                          value={this.state.selectedCategory}
+                        >
+                          {this.renderCategoryOptions()}
+                        </select>
                       </Grid>
                       <Grid item md={4} xs={4}>
-                        <p class="mb-0">Email</p>
+                        <p class="mb-0">Amount</p>
                       </Grid>
                       <Grid item md={8} xs={8}>
                         <input
                           type="text"
-                          name="email"
-                          value={this.state.email}
-                          onChange={this.handleChange}
-                          className="form-control"
-                        />
-                      </Grid>
-                      <Grid item md={4} xs={4}>
-                        <p class="mb-0">Phone Number</p>
-                      </Grid>
-                      <Grid item md={8} xs={8}>
-                        <input
-                          type="text"
-                          name="phoneNumber"
-                          value={this.state.phoneNumber}
-                          onChange={this.handleChange}
-                          className="form-control"
-                        />
-                      </Grid>
-                      <Grid item md={4} xs={4}>
-                        <p class="mb-0">Username</p>
-                      </Grid>
-                      <Grid item md={8} xs={8}>
-                        <input
-                          type="text"
-                          name="email"
-                          value={this.state.username}
-                          onChange={this.handleChange}
-                          className="form-control"
-                          disabled
-                        />
-                      </Grid>
-                      <Grid item md={4} xs={4}>
-                        <p class="mb-0">Country</p>
-                      </Grid>
-                      <Grid item md={8} xs={8}>
-                        <input
-                          type="text"
-                          name="country"
-                          value={this.state.country}
-                          onChange={this.handleChange}
+                          name="Amount"
+                          onChange={(event) =>
+                            this.setState({ amount: event.target.value })
+                          }
+                          value={this.state.amount}
                           className="form-control"
                         />
                       </Grid>
@@ -338,7 +421,7 @@ class account extends Component {
                       variant="contained"
                       type="submit"
                       className={classes.submitButton}
-                      onClick={this.updateFormValues}
+                      onClick={this.handleSubmit}
                       disabled={
                         this.state.buttonLoading ||
                         !this.state.firstName ||
@@ -346,7 +429,7 @@ class account extends Component {
                         !this.state.country
                       }
                     >
-                      Save details
+                      Submit
                       {this.state.buttonLoading && (
                         <CircularProgress
                           size={30}
@@ -367,4 +450,4 @@ class account extends Component {
   }
 }
 
-export default withStyles(styles)(account);
+export default withStyles(styles)(addpayment);

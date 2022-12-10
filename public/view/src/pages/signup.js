@@ -254,7 +254,7 @@ class signup extends Component {
             >
               Sign Up
               {loading && (
-                <CircularProgress size={30} className={classes.progess} />
+                <CircularProgress size={50} className={classes.progess} />
               )}
             </Button>
             <Grid container justify="flex-end">

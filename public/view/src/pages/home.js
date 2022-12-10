@@ -27,12 +27,22 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 
 import { authMiddleWare } from "../util/auth";
 import Payments from "../components/payments";
+import Addpayment from "../components/addpayment";
 
 const drawerWidth = 240;
 
 const styles = (theme) => ({
   root: {
     display: "flex",
+    width: "100%",
+  },
+  uiProgess: {
+    position: "fixed",
+    zIndex: "1000",
+    height: "31px",
+    width: "31px",
+    left: "50%",
+    top: "50%",
   },
   drawer: {
     [theme.breakpoints.up("sm")]: {
@@ -72,11 +82,15 @@ class home extends Component {
     render: 0,
   };
 
-  loadAccountPage = (event) => {
+  loadAccountPage = () => {
     this.setState({ render: 1 });
   };
 
-  loadTodoPage = (event) => {
+  loadAddPaymentPage = () => {
+    this.setState({ render: 3 });
+  };
+
+  loadPaymentsPage = (event) => {
     this.setState({ render: 0 });
   };
 
@@ -200,7 +214,7 @@ class home extends Component {
                 </ListItemIcon>
                 <ListItemText primary="Dashboard" />
               </ListItem>
-              <ListItem button key="Todo" onClick={this.loadTodoPage}>
+              <ListItem button key="Todo" onClick={this.loadPaymentsPage}>
                 <ListItemIcon>
                   {" "}
                   <NotesIcon />{" "}
@@ -230,7 +244,9 @@ class home extends Component {
             {this.state.render == 1 ? (
               <Account />
             ) : this.state.render == 0 ? (
-              <Payments />
+              <Payments createPayment={this.loadAddPaymentPage} />
+            ) : this.state.render == 3 ? (
+              <Addpayment loadPayment={this.loadPaymentsPage} />
             ) : (
               <Dashboard />
             )}

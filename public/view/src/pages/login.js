@@ -105,7 +105,7 @@ class login extends Component {
             <img
               style={{
                 zIndex: 1000,
-                width: "350px",
+                width: "100%",
                 height: "100px",
                 marginBottom: "60px",
               }}

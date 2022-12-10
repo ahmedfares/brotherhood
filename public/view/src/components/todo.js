@@ -89,7 +89,7 @@ const styles = (theme) => ({
     height: "31px",
     width: "31px",
     left: "50%",
-    top: "35%",
+    top: "50%",
   },
   viewRoot: {
     margin: 0,
@@ -497,7 +497,7 @@ class todo extends Component {
         <main className={classes.content}>
           <div className={classes.toolbar} />
           {this.state.uiLoading && (
-            <CircularProgress size={150} className={classes.uiProgess} />
+            <CircularProgress size={50} className={classes.uiProgess} />
           )}
         </main>
       );
