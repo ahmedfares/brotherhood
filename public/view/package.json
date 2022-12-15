@@ -4,6 +4,8 @@
   "private": true,
   "proxy": "https://us-central1-brotherhood-edc8d.cloudfunctions.net/api",
   "dependencies": {
+    "@capacitor/android": "4.6.1",
+    "@capacitor/core": "^4.6.1",
     "@devexpress/dx-react-chart": "^2.7.6",
     "@devexpress/dx-react-chart-material-ui": "^2.7.6",
     "@devexpress/dx-react-core": "^2.7.6",
@@ -45,5 +47,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^4.6.1"
   }
 }

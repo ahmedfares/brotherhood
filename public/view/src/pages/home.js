@@ -83,6 +83,7 @@ class home extends Component {
   };
 
   loadAccountPage = () => {
+    this.handleDrawerToggle();
     this.setState({ render: 1 });
   };
 
@@ -91,10 +92,12 @@ class home extends Component {
   };
 
   loadPaymentsPage = (event) => {
+    this.handleDrawerToggle();
     this.setState({ render: 0 });
   };
 
   loadDashboardPage = (event) => {
+    this.handleDrawerToggle();
     this.setState({ render: 2 });
   };
 

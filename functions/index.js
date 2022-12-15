@@ -5,11 +5,7 @@ const auth = require("./util/auth");
 const cors = require("cors");
 app.use(
   cors({
-    origin: [
-      "https://brotherhood-edc8d.web.app",
-      "https://brotherhood-p.xyz",
-      "http://localhost:3000",
-    ],
+    origin: "*",
   })
 );
 

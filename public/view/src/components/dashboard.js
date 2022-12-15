@@ -561,7 +561,9 @@ class Dashboard extends Component {
           {this.state.selectedChart === 0 && (
             <Paper className={classes.Paper}>
               <Chart data={chartData}>
-                <ArgumentAxis />
+                <ArgumentAxis>
+                  <Label rotationAngle={90} displayMode="rotate" />
+                </ArgumentAxis>
                 <ValueAxis />
 
                 <BarSeries

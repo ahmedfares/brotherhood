@@ -1,0 +1,7 @@
+{
+    "name": "brothers",
+    "integrations": {
+      "capacitor": {}
+    },
+    "type": "react"
+  }
