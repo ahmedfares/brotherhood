@@ -5,6 +5,11 @@ const firebase = require('firebase');
 
 firebase.initializeApp(config);
 
+if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    firebase.auth().useEmulator(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`);
+}
+
+
 const { validateLoginData, validateSignUpData } = require('../util/validators');
 
 // Login

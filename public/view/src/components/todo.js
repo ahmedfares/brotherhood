@@ -1,600 +1,490 @@
-import React, { Component } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import EditIcon from '@material-ui/icons/Edit';
+import DeleteIcon from '@material-ui/icons/Delete';
+import api from '../services/api';
+import './Payments.css';
 
-import withStyles from '@material-ui/core/styles/withStyles';
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import Paper from '@material-ui/core/Paper';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Dialog from '@material-ui/core/Dialog';
-import AddCircleIcon from '@material-ui/icons/AddCircle';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import CloseIcon from '@material-ui/icons/Close';
-import Slide from '@material-ui/core/Slide';
-import TextField from '@material-ui/core/TextField';
-import Grid from '@material-ui/core/Grid';
-import Card from '@material-ui/core/Card';
-import CardActions from '@material-ui/core/CardActions';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import CardContent from '@material-ui/core/CardContent';
-import MuiDialogTitle from '@material-ui/core/DialogTitle';
-import MuiDialogContent from '@material-ui/core/DialogContent';
-import { Animation } from '@devexpress/dx-react-chart';
-import { Legend } from '@devexpress/dx-react-chart-material-ui';
-import { Palette } from '@devexpress/dx-react-chart';
-import { EventTracker, HoverState } from '@devexpress/dx-react-chart';
+const Payments = () => {
+  const [payments, setPayments] = useState([]);
+  const [owners, setOwners] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Infinite Scroll State
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 10;
+  const observer = useRef();
+  const requestIdRef = useRef(0);
+  const pageRef = useRef(1);
+  const loadingRef = useRef(false);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const fetchDataRef = useRef(null);
 
-import {
-	Chart,
-	PieSeries,
-	Title,
-	Tooltip
-  } from '@devexpress/dx-react-chart-material-ui';
+  // Filter State
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonthPicker, setSelectedMonthPicker] = useState(defaultMonth);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [formData, setFormData] = useState({
+    paymentBy: '',
+    description: '',
+    category: '',
+    amount: ''
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-import axios from 'axios';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { authMiddleWare } from '../util/auth';
-import { blue, green, red } from '@material-ui/core/colors';
-// import Chart from "react-google-charts";
+  useEffect(() => {
+    pageRef.current = page;
+    loadingRef.current = loading;
+    loadingMoreRef.current = loadingMore;
+    hasMoreRef.current = hasMore;
+  }, [page, loading, loadingMore, hasMore]);
 
-function createData(name, calories, fat, carbs, protein) {
-	return { name, calories, fat, carbs, protein };
-}
-const rows = [
-	{
-		name: 'Ahmed',
-		calories: 98
-	}
-];
+  const loadNextPage = useCallback(() => {
+    if (loadingRef.current || loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setPage(pageRef.current + 1);
+  }, []);
 
-const styles = (theme) => ({
-	content: {
-		flexGrow: 1,
-		padding: theme.spacing(3),
-	},
-	toolbar: theme.mixins.toolbar,
-	title: {
-		marginLeft: theme.spacing(2),
-		flex: 1
-	},
-	submitButton: {
-		display: 'block',
-		color: 'white',
-		textAlign: 'center',
-		position: 'absolute',
-		top: 14,
-		right: 10
-	},
-	floatingButton: {
-		position: 'fixed',
-		bottom: 0,
-		right: 0
-	},
-	form: {
-		width: '98%',
-		marginLeft: 13,
-		marginTop: theme.spacing(10)
-	},
-	toolbar: theme.mixins.toolbar,
-	root: {
-		minWidth: 470
-	},
-	bullet: {
-		display: 'inline-block',
-		margin: '0 2px',
-		transform: 'scale(0.8)'
-	},
-	pos: {
-		marginBottom: 12
-	},
-	uiProgess: {
-		position: 'fixed',
-		zIndex: '1000',
-		height: '31px',
-		width: '31px',
-		left: '50%',
-		top: '35%'
-	},
-	dialogeStyle: {
-		maxWidth: '50%'
-	},
-	viewRoot: {
-		margin: 0,
-		padding: theme.spacing(2)
-	},
-	closeButton: {
-		position: 'absolute',
-		right: theme.spacing(1),
-		top: theme.spacing(1),
-		color: theme.palette.grey[500]
-	}
-});
+  // Sentinel ref for infinite scroll
+  const lastElementRef = useCallback(node => {
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadNextPage();
+      }
+    }, { root: null, rootMargin: '360px 0px', threshold: 0.01 });
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore, hasMore, loadNextPage]);
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-	return <Slide direction="up" ref={ref} {...props} />;
-});
+  const selectedYear = selectedMonthPicker ? selectedMonthPicker.split('-')[0] : 'All';
+  const selectedMonth = selectedMonthPicker ? (parseInt(selectedMonthPicker.split('-')[1], 10) - 1).toString() : 'All';
 
+  const fetchReferences = useCallback(async () => {
+    try {
+      const [ownersRes, categoriesRes] = await Promise.all([
+        api.get('/owners'),
+        api.get('/collections')
+      ]);
+      setOwners(ownersRes.data);
+      setCategories(categoriesRes.data);
+    } catch (error) {
+      console.error('Error fetching payment reference data', error);
+    }
+  }, []);
 
-class todo extends Component {
-	constructor(props) {
-		super(props);
+  const fetchData = useCallback(async (pageNum, isInitial = false) => {
+    const requestId = ++requestIdRef.current;
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
 
-		this.state = {
-			todos: [],
-			payments: [],
-			paymentBy: '',
-			description: '',
-			category: '',
-			amount: '',
-			categories: [],
-			owners: [],
-			title: '',
-			body: '',
-			todoId: '',
-			errors: [],
-			open: false,
-			uiLoading: true,
-			selectedOwner: 0,
-			selectedCategory: 0,
-			buttonType: '',
-			viewOpen: false
-		};
+    try {
+      const yearParam = selectedYear !== 'All' ? `&year=${selectedYear}` : '';
+      const monthParam = selectedMonth !== 'All' ? `&month=${selectedMonth}` : '';
+      const catParam = selectedCategory !== 'All' ? `&category=${selectedCategory}` : '';
+      
+      const paymentsRes = await api.get(`/payments?page=${pageNum}&limit=${limit}${yearParam}${monthParam}${catParam}`);
+      if (requestId !== requestIdRef.current) return;
+      
+      if (paymentsRes.data.status === 'success') {
+        const newPayments = paymentsRes.data.data;
+        setPayments(prev => isInitial ? newPayments : [...prev, ...newPayments]);
+        setHasMore(Boolean(paymentsRes.data.pagination.hasMore));
+      }
+    } catch (error) {
+      console.error('Error fetching payments data', error);
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  }, [selectedYear, selectedMonth, selectedCategory]);
 
-		this.deleteTodoHandler = this.deleteTodoHandler.bind(this);
-		this.handleEditClickOpen = this.handleEditClickOpen.bind(this);
-		this.handleViewOpen = this.handleViewOpen.bind(this);
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
-	}
+  useEffect(() => {
+    fetchReferences();
+  }, [fetchReferences]);
 
-	handleChange = (event) => {
-		this.setState({
-			[event.target.name]: event.target.value
-		});
-	};
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const fullHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
 
-	handleOwnerSelectChange = (event) => {
-		this.setState({ selectedOwner: event.target.value, name: event.target.name});
-	};
+        if (fullHeight - (scrollTop + viewportHeight) < 520) {
+          loadNextPage();
+        }
+        ticking = false;
+      });
+    };
 
-	handleCategorySelectChange = (event) => {
-		this.setState({ selectedCategory: event.target.value, name: event.target.name});
-	};
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('touchend', handleScroll, { passive: true });
 
-	componentWillMount = () => {
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchend', handleScroll);
+    };
+  }, [loadNextPage]);
 
-		authMiddleWare(this.props.history);
-		const authToken = localStorage.getItem('AuthToken');
-		axios.defaults.headers.common = { Authorization: `${authToken}` };
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
-			.then((response) => {
-				this.setState({
-					payments: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
+  // Reload when filters change
+  useEffect(() => {
+    pageRef.current = 1;
+    hasMoreRef.current = true;
+    loadingMoreRef.current = false;
+    setPage(1);
+    setPayments([]);
+    setHasMore(true);
+    setLoadingMore(false);
+    const contentArea = document.querySelector('.content-area');
+    if (contentArea) {
+      contentArea.scrollTop = 0;
+    }
+    fetchData(1, true);
+  }, [fetchData]);
 
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/owners')
-			.then((response) => {
-				this.setState({
-					owners: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/collections')
-			.then((response) => {
-				this.setState({
-					categories: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
+  // Load more when page changes
+  useEffect(() => {
+    if (page > 1) {
+      fetchDataRef.current(page);
+    }
+  }, [page]);
 
-	};
+  const openDeleteConfirm = (payment) => {
+    setDeleteTarget(payment);
+  };
 
-	deleteTodoHandler(data) {
-		if(window.confirm('Are you sure you want to delete this item ?'))
-		{
-			authMiddleWare(this.props.history);
-			const authToken = localStorage.getItem('AuthToken');
-			axios.defaults.headers.common = { Authorization: `${authToken}` };
-			let paymentId = data.payment.paymentId;
-			axios
-				.delete(`https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`)
-				.then(() => {
-					axios
-						.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
-						.then((response) => {
-							this.setState({
-								payments: response.data,
-								uiLoading: false
-							});
-						})
-						.catch((err) => {
-							console.log(err);
-						});
-				})
-				.catch((err) => {
-					console.log(err);
-				});
-		}
-		
-	}
+  const closeDeleteConfirm = () => {
+    if (!deleting) {
+      setDeleteTarget(null);
+    }
+  };
 
-	handleEditClickOpen(data) {
-		this.setState({
-			title: data.todo.title,
-			body: data.todo.body,
-			todoId: data.todo.todoId,
-			buttonType: 'Edit',
-			open: true
-		});
-	}
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
 
-	handleViewOpen(data) {
-		this.setState({
-			title: data.todo.title,
-			body: data.todo.body,
-			viewOpen: true
-		});
-	}
+    try {
+      await api.delete(`/payment/${deleteTarget.paymentId}`);
+      setDeleteTarget(null);
+      // Reset and refresh to first page to avoid index mismatches
+      setPage(1);
+      fetchData(1, true);
+    } catch (error) {
+      console.error('Error deleting transaction', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-	renderCategoryOptions() {
-		var categorySelect = [...[{collectionId:0,collectionName:'Select a Category'}], ...this.state.categories];
-		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select a category"
-				value={dt.collectionId}
-			   key={i} name={dt.collectionName}>{dt.collectionName}</MenuItem>
-			
-		  );
-		});
-	   }
+  const resetForm = () => {
+    setFormData({ paymentBy: '', description: '', category: '', amount: '' });
+    setFormErrors({});
+  };
 
-	renderOwnerOptions() {
-		var categorySelect = [...[{ownerId:0,ownerName:'Select Owner'}], ...this.state.owners];
-		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select owner"
-				value={dt.ownerId}
-			   key={i} name={dt.ownerName}>{dt.ownerName}</MenuItem>
-			
-		  );
-		});
-	   }
+  const openCreateModal = () => {
+    setEditingPayment(null);
+    resetForm();
+    setIsModalOpen(true);
+  };
 
+  const openEditModal = (payment) => {
+    setEditingPayment(payment);
+    setFormErrors({});
+    setFormData({
+      paymentBy: String(payment.TransactionBy || ''),
+      description: payment.Description || '',
+      category: String(payment.Category || ''),
+      amount: payment.Amount !== undefined && payment.Amount !== null ? String(payment.Amount) : ''
+    });
+    setIsModalOpen(true);
+  };
 
-	render() {
+  const closeTransactionModal = () => {
+    if (submitting) return;
+    setIsModalOpen(false);
+    setEditingPayment(null);
+    resetForm();
+  };
 
-		const DialogTitle = withStyles(styles)((props) => {
-			const { children, classes, onClose, ...other } = props;
-			
-			return (
-				<MuiDialogTitle disableTypography className={classes.root} {...other}>
-					<Typography variant="h6">{children}</Typography>
-					{onClose ? (
-						<IconButton aria-label="close" className={classes.closeButton} onClick={onClose}>
-							<CloseIcon />
-						</IconButton>
-					) : null}
-				</MuiDialogTitle>
-			);
-		});
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-		const DialogContent = withStyles((theme) => ({
-			viewRoot: {
-				padding: theme.spacing(2)
-			}
-		}))(MuiDialogContent);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormErrors({});
+    
+    const userPayment = {
+      TransactionBy: formData.paymentBy,
+      Category: formData.category,
+      Description: formData.description,
+      Amount: formData.amount
+    };
 
-		dayjs.extend(relativeTime);
-		const { classes } = this.props;
-		const { open, errors, viewOpen } = this.state;
+    try {
+      if (editingPayment) {
+        await api.put(`/payment/${editingPayment.paymentId}`, userPayment);
+      } else {
+        await api.post('/payment', userPayment);
+      }
+      setIsModalOpen(false);
+      setEditingPayment(null);
+      resetForm();
+      setPage(1);
+      fetchData(1, true);
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setFormErrors(error.response.data);
+      }
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-		const handleClickOpen = () => {
-			this.setState({
-				todoId: '',
-				title: '',
-				body: '',
-				buttonType: '',
-				open: true
-			});
-		};
+  if (loading && page === 1) {
+    return <div className="loading-container">Loading Transactions...</div>;
+  }
 
-		const handleSubmit = (event) => {
-			authMiddleWare(this.props.history);
-			event.preventDefault();
-			const userTodo = {
-				title: this.state.title,
-				body: this.state.body
-			};
-			const userPayment = {
-				TransactionBy: this.state.selectedOwner,
-				Category: this.state.selectedCategory,
-				Description: this.state.description,
-				Amount: this.state.amount
-			};
-			let options = {};
-			if (this.state.buttonType === 'Edit') {
-				options = {
-					url: `https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${this.state.todoId}`,
-					method: 'put',
-					data: userPayment
-				};
-			} else {
-				options = {
-					url: 'https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment',
-					method: 'post',
-					data: userPayment
-				};
-			}
-			const authToken = localStorage.getItem('AuthToken');
-			axios.defaults.headers.common = { Authorization: `${authToken}` };
-			axios(options)
-				.then(() => {
-					this.setState({ open: false });
+  return (
+    <div>
+      <div className="payments-header">
+        <button className="btn-primary new-payment-btn" onClick={openCreateModal}>
+          + New Transaction
+        </button>
+      </div>
 
-					authMiddleWare(this.props.history);
-					const authToken = localStorage.getItem('AuthToken');
-					axios.defaults.headers.common = { Authorization: `${authToken}` };
-					axios
-						.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
-						.then((response) => {
-							this.setState({
-								payments: response.data,
-								uiLoading: false
-							});
-						})
-						.catch((err) => {
-							console.log(err);
-						});
-					//window.location.reload();
-				})
-				.catch((error) => {
-					this.setState({ open: true, errors: error.response.data });
-					console.log(error);
-				});
-		};
+      <div className="glass-panel payments-filter-bar">
+        <div className="filter-item">
+          <label>Month</label>
+          <input
+            type="month"
+            className="filter-control"
+            value={selectedMonthPicker}
+            onChange={(e) => setSelectedMonthPicker(e.target.value)}
+          />
+        </div>
 
-		const handleViewClose = () => {
-			this.setState({ viewOpen: false });
-		};
+        <div className="filter-item">
+          <label>Category</label>
+          <select className="filter-control" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+            <option value="All">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat.collectionId} value={cat.collectionId}>{cat.collectionName}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-		const handleClose = (event) => {
-			this.setState({ open: false });
-		};
+      <div className="mobile-cards">
+        {payments.map((payment) => {
+          const ownerName = owners.find(x => String(x.ownerId) === String(payment.TransactionBy))?.ownerName || 'Unknown';
+          const catName = categories.find(x => String(x.collectionId) === String(payment.Category))?.collectionName || 'Unknown';
+          const dateStr = new Date(payment.TransactionDate).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+          
+          return (
+            <div key={payment.paymentId} className="glass-panel transaction-card">
+              <div className="card-topline">
+                <div className="card-main">
+                  <span className="card-title">{payment.Description}</span>
+                  <span className="card-date">{dateStr}</span>
+                </div>
+                <span className="card-amount">${Number(payment.Amount).toFixed(2)}</span>
+              </div>
+              <div className="card-meta">
+                <span className="card-badge">{catName}</span>
+                <span className="card-badge" style={{ background: 'rgba(14, 89, 104, 0.28)', color: '#c8d6d2' }}>{ownerName}</span>
+                <div className="card-actions">
+                  <button className="icon-action-btn edit" onClick={() => openEditModal(payment)} aria-label="Update transaction" title="Update transaction">
+                    <EditIcon fontSize="small" />
+                  </button>
+                  <button className="icon-action-btn delete" onClick={() => openDeleteConfirm(payment)} aria-label="Delete transaction" title="Delete transaction">
+                    <DeleteIcon fontSize="small" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-		if (this.state.uiLoading === true) {
-			return (
-				<main className={classes.content}>
-					<div className={classes.toolbar} />
-					{this.state.uiLoading && <CircularProgress size={150} className={classes.uiProgess} />}
-				</main>
-			);
-		} else {
+      <div className="glass-panel table-container">
+        <table className="custom-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Action Taker</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((payment) => {
+              const ownerName = owners.find(x => String(x.ownerId) === String(payment.TransactionBy))?.ownerName || 'Unknown';
+              const catName = categories.find(x => String(x.collectionId) === String(payment.Category))?.collectionName || 'Unknown';
+              return (
+                <tr key={payment.paymentId}>
+                  <td>{new Date(payment.TransactionDate).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td>{ownerName}</td>
+                  <td>{payment.Description}</td>
+                  <td><span className="badge">{catName}</span></td>
+                  <td className="amount-cell">${Number(payment.Amount).toFixed(2)}</td>
+                  <td className="table-actions">
+                    <button className="icon-action-btn edit" onClick={() => openEditModal(payment)} aria-label="Update transaction" title="Update transaction">
+                      <EditIcon fontSize="small" />
+                    </button>
+                    <button className="icon-action-btn delete" onClick={() => openDeleteConfirm(payment)} aria-label="Delete transaction" title="Delete transaction">
+                      <DeleteIcon fontSize="small" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-			const categoryData = [];
-			const ownerData = [];
-			
-			if(this.state.owners.length > 0 && this.state.categories.length > 0 && this.state.payments.length > 0)
-			{
-				this.state.payments.map(obj=>({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function(res, value) {
-					if (!res[value.CategoryName]) {
-					  res[value.CategoryName] = { argument: value.CategoryName, value: value.Amount };
-					  categoryData.push(res[value.CategoryName])
-					}
-					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount)?Number(res[value.CategoryName].Amount):0);
-					res[value.CategoryName].value = res[value.CategoryName].Amount;
-					return res;
-				  }, {});
-	
-				this.state.payments.map(obj=>({ ...obj, OwnerName: this.state.owners.find(x => x.ownerId == obj.TransactionBy).ownerName})).reduce(function(res, value) {
-					  if (!res[value.OwnerName]) {
-						res[value.OwnerName] = { argument: value.OwnerName, value: value.Amount };
-						ownerData.push(res[value.OwnerName])
-					  }
-					  res[value.OwnerName].Amount = Number(value.Amount) + ((res[value.OwnerName].Amount)?Number(res[value.OwnerName].Amount):0);
-					  res[value.OwnerName].value = res[value.OwnerName].Amount;
-					  return res;
-					}, {});
-	
-			}
-			
-			const expectedData = [
-				{ argument:'Food', value:500 },
-				{ argument:'Rent', value:1200 },
-				{ argument:'Electricity', value:100 },
-				{ argument:'Internet', value:40 },
-				{ argument:'Charity', value:1200 },
-				{ argument:'Fuel', value:100 },
-				{ argument:'Insurance', value:75 },
-				{ argument:'Expenses', value:285 },
-			  ];
-			return (
-				<main style={{width:1200, padding:24}}>
-					<div className={classes.toolbar} />
+      {/* Dedicated Scroll Sentinel */}
+      <div ref={lastElementRef} style={{ height: '10px' }}></div>
 
-					<IconButton
-						className={classes.floatingButton}
-						color="primary"
-						aria-label="Add Todo"
-						onClick={handleClickOpen}
-					>
-						<AddCircleIcon style={{ fontSize: 60 }} />
-					</IconButton>
-					<Dialog fullScreen open={open} onClose={handleClose} TransitionComponent={Transition}>
-						<AppBar color="secondary" className={classes.appBar}>
-							<Toolbar>
-								<IconButton edge="start" color="inherit" onClick={handleClose} aria-label="close">
-									<CloseIcon />
-								</IconButton>
-								<Typography variant="h6" className={classes.title}>
-									{this.state.buttonType === 'Edit' ? 'Edit Todo' : 'Create a new Payment'}
-								</Typography>
-								<Button
-									autoFocus
-									color="inherit"
-									onClick={handleSubmit}
-									className={classes.submitButton}
-								>
-									{this.state.buttonType === 'Edit' ? 'Save' : 'Submit'}
-								</Button>
-							</Toolbar>
-						</AppBar>
+      {/* Infinite Scroll Feedback */}
+      {loadingMore && <div className="infinite-loader">Loading more transactions...</div>}
+      {!hasMore && payments.length > 0 && <div className="end-message">You've reached the end of your transactions.</div>}
+      {payments.length === 0 && !loading && <div className="empty-chart">No transactions found.</div>}
 
-						<form className={classes.form} noValidate>
-							<Grid container spacing={2}>
-								<Grid item xs={12}>
-								<Select
-									variant="outlined"
-									required
-									fullWidth
-									id="paymentBy"
-									label="paymentBy"
-									name="paymentBy"
-									autoComplete="paymentBy"
-									helperText={errors.paymentBy}
-									value={this.state.selectedOwner}
-									onChange={this.handleOwnerSelectChange}>
-										{this.renderOwnerOptions()}
-									</Select>
-								</Grid>
-								<Grid item xs={12}>
-									<TextField
-										variant="outlined"
-										required
-										fullWidth
-										id="description"
-										label="Description"
-										name="description"
-										autoComplete="description"
-										helperText={errors.description}
-										value={this.state.description}
-										error={errors.description ? true : false}
-										onChange={this.handleChange}
-									/>
-								</Grid>
-								<Grid item xs={12}>
-									<Select
-									variant="outlined"
-									required
-									fullWidth
-									id="category"
-									label="Category"
-									name="category"
-									autoComplete="category"
-									helperText={errors.category}
-									value={this.state.selectedCategory}
-									onChange={this.handleCategorySelectChange}>
-										{this.renderCategoryOptions()}
-									</Select>
-									
-								</Grid>
-								<Grid item xs={12}>
-									<TextField
-										variant="outlined"
-										required
-										fullWidth
-										id="amount"
-										label="Amount"
-										name="amount"
-										autoComplete="amount"
-										helperText={errors.amount}
-										value={this.state.amount}
-										error={errors.amount ? true : false}
-										onChange={this.handleChange}
-									/>
-								</Grid>
-								
-							</Grid>
-						</form>
-					</Dialog>
+      {deleteTarget && (
+        <div className="modal-overlay confirm-overlay" role="presentation" onClick={closeDeleteConfirm}>
+          <div className="glass-panel confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-icon">!</div>
+            <div className="confirm-copy">
+              <h3 id="delete-confirm-title" className="confirm-title">Delete transaction?</h3>
+              <p className="confirm-text">
+                This will permanently remove this transaction from your records.
+              </p>
+              <div className="confirm-summary">
+                <span>{deleteTarget.Description || 'Transaction'}</span>
+                <strong>${Number(deleteTarget.Amount).toFixed(2)}</strong>
+              </div>
+            </div>
+            <div className="confirm-actions">
+              <button type="button" className="btn-secondary confirm-cancel" onClick={closeDeleteConfirm} disabled={deleting}>
+                Cancel
+              </button>
+              <button type="button" className="btn-danger confirm-delete" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-					<TableContainer component={Paper} style={{marginBottom: 20}}>
-						<Table sx={{ minWidth: 650 }} aria-label="a dense table">
-							<TableHead>
-								<TableRow>
-									<TableCell align="right">Payment Date</TableCell>
-									<TableCell align="right">Payment By</TableCell>
-									<TableCell align="right">Description</TableCell>
-									<TableCell align="right">Category</TableCell>
-									<TableCell align="right">Amount</TableCell>
-									<TableCell align="right">Action</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{this.state.payments.map((payment) => (
-									<TableRow >
-										<TableCell align="right">{(new Date(payment.TransactionDate)).toLocaleDateString("en-US")}</TableCell>
-										<TableCell align="right">{(this.state.owners.length > 0) ? this.state.owners.find(x => x.ownerId == payment.TransactionBy).ownerName : ''}</TableCell>
-										<TableCell align="right">{payment.Description}</TableCell>
-										<TableCell align="right">{(this.state.categories.length > 0) ? this.state.categories.find(x => x.collectionId == payment.Category).collectionName : ''}</TableCell>
-										<TableCell align="right">{payment.Amount}</TableCell>
-										<TableCell align="right">
-											<Button size="small" color="primary" onClick={() => this.deleteTodoHandler({ payment })}>
-												Delete
-											</Button>
-										</TableCell>
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">{editingPayment ? 'Update Transaction' : 'Create a New Transaction'}</h3>
+              <button className="modal-close" onClick={closeTransactionModal}>&times;</button>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label className="form-label">Transaction By</label>
+                <select 
+                  name="paymentBy" 
+                  className="form-select" 
+                  value={formData.paymentBy} 
+                  onChange={handleInputChange} 
+                  required
+                >
+                  <option value="" disabled>Select Owner</option>
+                  {owners.map(owner => (
+                    <option key={owner.ownerId} value={owner.ownerId}>{owner.ownerName}</option>
+                  ))}
+                </select>
+                {formErrors.paymentBy && <div className="auth-error">{formErrors.paymentBy}</div>}
+              </div>
 
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</TableContainer>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <input 
+                  type="text" 
+                  name="description" 
+                  className="form-input" 
+                  value={formData.description} 
+                  onChange={handleInputChange} 
+                  required 
+                />
+                {formErrors.description && <div className="auth-error">{formErrors.description}</div>}
+              </div>
 
-					<Dialog
-						onClose={handleViewClose}
-						aria-labelledby="customized-dialog-title"
-						open={viewOpen}
-						fullWidth
-						classes={{ paperFullWidth: classes.dialogeStyle }}
-					>
-						<DialogTitle id="customized-dialog-title" onClose={handleViewClose}>
-							{this.state.title}
-						</DialogTitle>
-						<DialogContent dividers>
-							<TextField
-								fullWidth
-								id="todoDetails"
-								name="body"
-								multiline
-								readonly
-								rows={1}
-								rowsMax={25}
-								value={this.state.body}
-								InputProps={{
-									disableUnderline: true
-								}}
-							/>
-						</DialogContent>
-					</Dialog>
-				</main>
-			);
-		}
-	}
-}
+              <div className="form-group">
+                <label className="form-label">Category</label>
+                <select 
+                  name="category" 
+                  className="form-select" 
+                  value={formData.category} 
+                  onChange={handleInputChange} 
+                  required
+                >
+                  <option value="" disabled>Select a Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.collectionId} value={cat.collectionId}>{cat.collectionName}</option>
+                  ))}
+                </select>
+                {formErrors.category && <div className="auth-error">{formErrors.category}</div>}
+              </div>
 
-export default (withStyles(styles)(todo));
+              <div className="form-group">
+                <label className="form-label">Amount</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  name="amount" 
+                  className="form-input" 
+                  value={formData.amount} 
+                  onChange={handleInputChange} 
+                  required 
+                />
+                {formErrors.amount && <div className="auth-error">{formErrors.amount}</div>}
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={submitting}>
+                {submitting ? 'Saving...' : editingPayment ? 'Save Changes' : 'Submit Transaction'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+export default Payments;

@@ -1,167 +1,124 @@
-import React, { Component } from 'react';
-import Avatar from '@material-ui/core/Avatar';
-import Button from '@material-ui/core/Button';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import TextField from '@material-ui/core/TextField';
-import Link from '@material-ui/core/Link';
-import Grid from '@material-ui/core/Grid';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import Typography from '@material-ui/core/Typography';
-import withStyles from '@material-ui/core/styles/withStyles';
-import Container from '@material-ui/core/Container';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import React, { useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
+import './Auth.css';
+import logoSlogan from '../assets/brand-logo.png';
+import { applyTheme, getStoredTheme } from '../utils/theme';
 
-import axios from 'axios';
+const Login = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState(getStoredTheme());
+  const { login } = useContext(AuthContext);
 
-const styles = (theme) => ({
-	paper: {
-		marginTop: theme.spacing(8),
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center'
-	},
-	avatar: {
-		margin: theme.spacing(1),
-		backgroundColor: theme.palette.secondary.main
-	},
-	form: {
-		width: '100%',
-		marginTop: theme.spacing(1)
-	},
-	submit: {
-		margin: theme.spacing(3, 0, 2)
-	},
-	customError: {
-		color: 'red',
-		fontSize: '0.8rem',
-		marginTop: 10
-	},
-	progess: {
-		position: 'absolute'
-	}
-});
+  const handleThemeChange = (nextTheme) => {
+    setTheme(applyTheme(nextTheme));
+  };
 
-class login extends Component {
-	constructor(props) {
-		super(props);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-		this.state = {
-			email: '',
-			password: '',
-			errors: [],
-			loading: false
-		};
-	}
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
+    
+    try {
+      const response = await api.post('/login', formData);
+      login(response.data.token);
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setErrors(error.response.data);
+      } else {
+        setErrors({ general: 'Something went wrong. Please try again.' });
+      }
+      setLoading(false);
+    }
+  };
 
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.UI.errors) {
-			this.setState({
-				errors: nextProps.UI.errors
-			});
-		}
-	}
+  return (
+    <div className="auth-container login-auth-container">
+      <div className="auth-sidebar">
+        <div className="auth-sidebar-bg"></div>
+        <div className="auth-sidebar-content">
+          <img src={logoSlogan} alt="Brotherhood - Together to the heaven" className="auth-hero-logo" />
+          <h1 className="auth-sidebar-title">Welcome Back</h1>
+          <p className="auth-sidebar-text">Track shared expenses, responsibilities, and monthly progress in one polished workspace.</p>
+        </div>
+      </div>
+      <div className="auth-content login-auth-content">
+        <div className="auth-box login-auth-box glass-panel">
+          <div className="auth-header">
+            <img src={logoSlogan} alt="Brotherhood" className="auth-card-logo" />
+            <h2 className="auth-title">Sign In</h2>
+            <p className="auth-subtitle">Access your dashboard</p>
+          </div>
 
-	handleChange = (event) => {
-		this.setState({
-			[event.target.name]: event.target.value
-		});
-	};
+          <div className="theme-toggle" aria-label="Choose theme">
+            <button
+              type="button"
+              className={theme === 'dark' ? 'active' : ''}
+              onClick={() => handleThemeChange('dark')}
+            >
+              Dark
+            </button>
+            <button
+              type="button"
+              className={theme === 'light' ? 'active' : ''}
+              onClick={() => handleThemeChange('light')}
+            >
+              Light
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                className="form-input"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+              {errors.email && <div className="auth-error">{errors.email}</div>}
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                className="form-input"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              {errors.password && <div className="auth-error">{errors.password}</div>}
+            </div>
+            
+            {errors.general && <div className="auth-error" style={{ marginBottom: '1rem' }}>{errors.general}</div>}
+            
+            <button 
+              type="submit" 
+              className="btn-primary"
+              disabled={loading || !formData.email || !formData.password}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+          
+          <div className="auth-footer">
+            Don't have an account? <Link to="/signup">Sign Up</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-	handleSubmit = (event) => {
-		event.preventDefault();
-		this.setState({ loading: true });
-		const userData = {
-			email: this.state.email,
-			password: this.state.password
-		};
-		axios
-			.post('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/login', userData)
-			.then((response) => {
-				localStorage.setItem('AuthToken', `Bearer ${response.data.token}`);
-				this.setState({ 
-					loading: false,
-				});		
-				this.props.history.push('/');
-			})
-			.catch((error) => {				
-				this.setState({
-					errors: error.response.data,
-					loading: false
-				});
-			});
-	};
-
-	render() {
-		const { classes } = this.props;
-		const { errors, loading } = this.state;
-		return (
-			<Container component="main" maxWidth="xs">
-				<CssBaseline />
-				<div className={classes.paper}>
-					<Avatar className={classes.avatar}>
-						<LockOutlinedIcon /> 
-					</Avatar>
-					<Typography component="h1" variant="h5">
-						Login
-					</Typography>
-					<form className={classes.form} noValidate>
-						<TextField
-							variant="outlined"
-							margin="normal"
-							required
-							fullWidth
-							id="email"
-							label="Email Address"
-							name="email"
-							autoComplete="email"
-							autoFocus
-							helperText={errors.email}
-							error={errors.email ? true : false}
-							onChange={this.handleChange}
-						/>
-						<TextField
-							variant="outlined"
-							margin="normal"
-							required
-							fullWidth
-							name="password"
-							label="Password"
-							type="password"
-							id="password"
-							autoComplete="current-password"
-							helperText={errors.password}
-							error={errors.password ? true : false}
-							onChange={this.handleChange}
-						/>
-						<Button
-							type="submit"
-							fullWidth
-							variant="contained"
-							color="primary"
-							className={classes.submit}
-							onClick={this.handleSubmit}
-							disabled={loading || !this.state.email || !this.state.password}
-						>
-							Sign In
-							{loading && <CircularProgress size={30} className={classes.progess} />}
-						</Button>
-						<Grid container>
-							<Grid item>
-								<Link href="signup" variant="body2">
-									{"Don't have an account? Sign Up"}
-								</Link>
-							</Grid>
-						</Grid>
-						{errors.general && (
-							<Typography variant="body2" className={classes.customError}>
-								{errors.general}
-							</Typography>
-						)}
-					</form>
-				</div>
-			</Container>
-		);
-	}
-}
-
-export default withStyles(styles)(login);
+export default Login;

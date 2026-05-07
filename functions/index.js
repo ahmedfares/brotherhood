@@ -4,8 +4,14 @@ const auth = require('./util/auth');
 
 const cors = require('cors');
 app.use(cors({
-    origin: ['https://brotherhood-edc8d.web.app', 'https://brotherhood-p.xyz']
+    origin: [
+        'https://brotherhood-edc8d.web.app',
+        'https://brotherhood-p.xyz',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ]
 }));
+
 
 const {
     getAllTodos,
@@ -24,13 +30,15 @@ app.put('/todo/:todoId',auth, editTodo);
 
 const {
     getAllPayments,
+    getPaymentsMetadata,
     postOnePayment,
-	deletePayment,
+    deletePayment,
     editPayment
 } = require('./APIs/payments');
 
 // Payments
 app.get('/payments', auth, getAllPayments);
+app.get('/payments/metadata', auth, getPaymentsMetadata);
 app.post('/payment',auth, postOnePayment);
 app.delete('/payment/:paymentId',auth, deletePayment);
 app.put('/payment/:paymentId',auth, editPayment);

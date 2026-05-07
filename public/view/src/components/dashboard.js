@@ -1,577 +1,434 @@
-import React, { Component } from 'react'
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import './Dashboard.css';
 
-import withStyles from '@material-ui/core/styles/withStyles';
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import Paper from '@material-ui/core/Paper';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Dialog from '@material-ui/core/Dialog';
-import AddCircleIcon from '@material-ui/icons/AddCircle';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import CloseIcon from '@material-ui/icons/Close';
-import Slide from '@material-ui/core/Slide';
-import TextField from '@material-ui/core/TextField';
-import Grid from '@material-ui/core/Grid';
-import Card from '@material-ui/core/Card';
-import CardActions from '@material-ui/core/CardActions';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import CardContent from '@material-ui/core/CardContent';
-import MuiDialogTitle from '@material-ui/core/DialogTitle';
-import MuiDialogContent from '@material-ui/core/DialogContent';
-import { Stack, Animation } from '@devexpress/dx-react-chart';
-import {
-	Legend,
-	ArgumentAxis,
-	ValueAxis,
-	BarSeries,
-} from '@devexpress/dx-react-chart-material-ui';
-import { Palette } from '@devexpress/dx-react-chart';
-import { EventTracker, HoverState } from '@devexpress/dx-react-chart';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-import {
-	Chart,
-	PieSeries,
-	Title,
-	Tooltip
-  } from '@devexpress/dx-react-chart-material-ui';
+const COLORS = ['#c5a85c', '#0e5968', '#2fb889', '#f59e0b', '#d86b5b', '#86a89b', '#9a7a31', '#4f8f9a', '#e4c987'];
 
-import axios from 'axios';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { authMiddleWare } from '../util/auth';
-import { blue, green, red } from '@material-ui/core/colors';
-// import Chart from "react-google-charts";
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip" style={{ backgroundColor: 'rgba(5, 22, 29, 0.92)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(197,168,92,0.24)', color: '#fff', backdropFilter: 'blur(10px)' }}>
+        <p className="label" style={{ margin: 0, fontWeight: 'bold', fontSize: '14px' }}>{`${payload[0].name || payload[0].payload.argument}`}</p>
+        <p className="desc" style={{ margin: '4px 0 0 0', color: payload[0].payload.fill || '#fff', fontSize: '14px' }}>
+          ${Number(payload[0].value).toFixed(2)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
-function createData(name, calories, fat, carbs, protein) {
-	return { name, calories, fat, carbs, protein };
-}
-const rows = [
-	{
-		name: 'Ahmed',
-		calories: 98
-	}
-];
+const BudgetProgressBar = ({ category, actual, expected }) => {
+  const [animatedWidth, setAnimatedWidth] = useState(0);
 
-const styles = (theme) => ({
-	content: {
-		flexGrow: 1,
-		padding: theme.spacing(3),
-	},
-	toolbar: theme.mixins.toolbar,
-	title: {
-		marginLeft: theme.spacing(2),
-		flex: 1
-	},
-	submitButton: {
-		display: 'block',
-		color: 'white',
-		textAlign: 'center',
-		position: 'absolute',
-		top: 14,
-		right: 10
-	},
-	floatingButton: {
-		position: 'fixed',
-		bottom: 0,
-		right: 0
-	},
-	form: {
-		width: '98%',
-		marginLeft: 13,
-		marginTop: theme.spacing(10)
-	},
-	toolbar: theme.mixins.toolbar,
-	root: {
-		minWidth: 470
-	},
-	bullet: {
-		display: 'inline-block',
-		margin: '0 2px',
-		transform: 'scale(0.8)'
-	},
-	pos: {
-		marginBottom: 12
-	},
-	uiProgess: {
-		position: 'fixed',
-		zIndex: '1000',
-		height: '31px',
-		width: '31px',
-		left: '50%',
-		top: '35%'
-	},
-	dialogeStyle: {
-		maxWidth: '50%'
-	},
-	viewRoot: {
-		margin: 0,
-		padding: theme.spacing(2)
-	},
-	closeButton: {
-		position: 'absolute',
-		right: theme.spacing(1),
-		top: theme.spacing(1),
-		color: theme.palette.grey[500]
-	}
-});
+  // If expected is 0, avoid division by zero
+  const percentage = expected > 0 ? (actual / expected) * 100 : 0;
+  
+  // Cap width at 100% for the visual bar
+  const visualPercentage = Math.min(percentage, 100);
+  
+  // Logic: if actual < expected, green. If actual >= expected, red.
+  const isOverBudget = actual >= expected;
+  const barColorClass = isOverBudget ? 'bg-danger-stripe' : 'bg-success-stripe';
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-	return <Slide direction="up" ref={ref} {...props} />;
-});
+  // Trigger the width animation shortly after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedWidth(visualPercentage);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [visualPercentage]);
 
+  return (
+    <div className="progress-item">
+      <div className="progress-header">
+        <span className="progress-label">{category}</span>
+        <div className="progress-stats">
+          <span className="progress-actual">${actual.toFixed(2)}</span>
+          <span className="progress-separator">/</span>
+          <span className="progress-expected">${expected.toFixed(2)}</span>
+        </div>
+      </div>
+      
+      {/* Tooltip Wrapper */}
+      <div 
+        className="progress-track tooltip-wrapper" 
+        title={`${category}: ${percentage.toFixed(1)}% of budget used${isOverBudget ? ' (Over Budget!)' : ''}`}
+      >
+        <div 
+          className={`progress-fill ${barColorClass}`} 
+          style={{ width: `${animatedWidth}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
-class Dashboard extends Component {
-	constructor(props) {
-		super(props);
+const Dashboard = () => {
+  const [payments, setPayments] = useState([]);
+  const [owners, setOwners] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-		this.state = {
-			todos: [],
-			payments: [],
-			paymentBy: '',
-			description: '',
-			category: '',
-			amount: '',
-			categories: [],
-			owners: [],
-			title: '',
-			body: '',
-			todoId: '',
-			errors: [],
-			open: false,
-			uiLoading: true,
-			selectedOwner: 0,
-			selectedCategory: 0,
-			buttonType: '',
-			viewOpen: false
-		};
+  // Initialize with current year and month using a single month-picker value (YYYY-MM)
+  const currentDate = new Date();
+  const defaultMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonthPicker, setSelectedMonthPicker] = useState(defaultMonth);
+  const [showFullYear, setShowFullYear] = useState(false);
+  
+  // Derive year/month from picker for API
+  const selectedYear = selectedMonthPicker ? selectedMonthPicker.split('-')[0] : 'All';
+  const selectedMonth = showFullYear ? 'All' : selectedMonthPicker ? (parseInt(selectedMonthPicker.split('-')[1], 10) - 1).toString() : 'All';
+  const selectedYearNumber = parseInt(selectedYear, 10);
+  const currentYear = currentDate.getFullYear();
+  const expectedBudgetMultiplier = showFullYear
+    ? selectedYearNumber < currentYear
+      ? 12
+      : selectedYearNumber === currentYear
+        ? currentDate.getMonth() + 1
+        : 0
+    : 1;
+  
+  // Chart Selector State
+  const [selectedChart, setSelectedChart] = useState('progress'); // 'progress', 'category', 'owner'
 
-		this.deleteTodoHandler = this.deleteTodoHandler.bind(this);
-		this.handleEditClickOpen = this.handleEditClickOpen.bind(this);
-		this.handleViewOpen = this.handleViewOpen.bind(this);
+  useEffect(() => {
+    const contentArea = document.querySelector('.content-area');
+    if (contentArea) {
+      contentArea.classList.add('dashboard-no-scroll');
+    }
 
-	}
+    return () => {
+      if (contentArea) {
+        contentArea.classList.remove('dashboard-no-scroll');
+      }
+    };
+  }, []);
 
-	handleChange = (event) => {
-		this.setState({
-			[event.target.name]: event.target.value
-		});
-	};
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Pass filters to server. limit=1000 to get all data for the period for charts.
+        const [paymentsRes, ownersRes, categoriesRes] = await Promise.all([
+          api.get(`/payments?year=${selectedYear}&month=${selectedMonth}&limit=1000`),
+          api.get('/owners'),
+          api.get('/collections')
+        ]);
+        
+        if (paymentsRes.data.status === 'success') {
+          setPayments(paymentsRes.data.data);
+        } else {
+          setPayments(paymentsRes.data);
+        }
+        setOwners(ownersRes.data);
+        setCategories(categoriesRes.data);
+      } catch (error) {
+        console.error('Error fetching dashboard data', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-	handleOwnerSelectChange = (event) => {
-		this.setState({ selectedOwner: event.target.value, name: event.target.name});
-	};
-
-	handleCategorySelectChange = (event) => {
-		this.setState({ selectedCategory: event.target.value, name: event.target.name});
-	};
-
-	componentWillMount = () => {
-
-		authMiddleWare(this.props.history);
-		const authToken = localStorage.getItem('AuthToken');
-		axios.defaults.headers.common = { Authorization: `${authToken}` };
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
-			.then((response) => {
-				this.setState({
-					payments: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/owners')
-			.then((response) => {
-				this.setState({
-					owners: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-		axios
-			.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/collections')
-			.then((response) => {
-				this.setState({
-					categories: response.data,
-					uiLoading: false
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-
-	};
-
-	deleteTodoHandler(data) {
-		authMiddleWare(this.props.history);
-		const authToken = localStorage.getItem('AuthToken');
-		axios.defaults.headers.common = { Authorization: `${authToken}` };
-		let paymentId = data.payment.paymentId;
-		axios
-			.delete(`https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payment/${paymentId}`)
-			.then(() => {
-				axios
-					.get('https://us-central1-brotherhood-edc8d.cloudfunctions.net/api/payments')
-					.then((response) => {
-						this.setState({
-							payments: response.data,
-							uiLoading: false
-						});
-					})
-					.catch((err) => {
-						console.log(err);
-					});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-	}
-
-	handleEditClickOpen(data) {
-		this.setState({
-			title: data.todo.title,
-			body: data.todo.body,
-			todoId: data.todo.todoId,
-			buttonType: 'Edit',
-			open: true
-		});
-	}
-
-	handleViewOpen(data) {
-		this.setState({
-			title: data.todo.title,
-			body: data.todo.body,
-			viewOpen: true
-		});
-	}
-
-	renderCategoryOptions() {
-		var categorySelect = [...[{collectionId:0,collectionName:'Select a Category'}], ...this.state.categories];
-		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select a category"
-				value={dt.collectionId}
-			   key={i} name={dt.collectionName}>{dt.collectionName}</MenuItem>
-			
-		  );
-		});
-	   }
-
-	renderOwnerOptions() {
-		var categorySelect = [...[{ownerId:0,ownerName:'Select Owner'}], ...this.state.owners];
-		return categorySelect.map((dt, i) => {
-		 //console.log(dt);
-		  return (
-			  <MenuItem
-				label="Select owner"
-				value={dt.ownerId}
-			   key={i} name={dt.ownerName}>{dt.ownerName}</MenuItem>
-			
-		  );
-		});
-	   }
+    fetchData();
+  }, [selectedYear, selectedMonth]); // Trigger fetch when filters change
 
 
-	render() {
+  // Only show the full-screen loader on initial mount when we have no data
+  if (loading && payments.length === 0) {
+    return <div className="loading-container">Loading Dashboard...</div>;
+  }
 
-		const DialogTitle = withStyles(styles)((props) => {
-			const { children, classes, onClose, ...other } = props;
-			
-			return (
-				<MuiDialogTitle disableTypography className={classes.root} {...other}>
-					<Typography variant="h6">{children}</Typography>
-					{onClose ? (
-						<IconButton aria-label="close" className={classes.closeButton} onClick={onClose}>
-							<CloseIcon />
-						</IconButton>
-					) : null}
-				</MuiDialogTitle>
-			);
-		});
+  // Data Processing
+  let categoryData = [];
+  let ownerData = [];
+  let budgetData = [];
+  let totalExpenses = 0;
+  let totalExpectedBudget = 0;
 
-		const DialogContent = withStyles((theme) => ({
-			viewRoot: {
-				padding: theme.spacing(2)
-			}
-		}))(MuiDialogContent);
+  if (owners.length > 0 && categories.length > 0 && payments.length > 0) {
+    // 1. Data is already filtered by the server
+    const filteredPayments = payments;
 
-		dayjs.extend(relativeTime);
-		const { classes } = this.props;
-		const { open, errors, viewOpen } = this.state;
+    // Process Category Pie Chart (DevExpress Format: { argument, value })
+    const categoryMap = {};
+    filteredPayments.forEach(obj => {
+      totalExpenses += Number(obj.Amount);
+      const catName = categories.find(x => x.collectionId == obj.Category)?.collectionName || 'Unknown';
+      if (!categoryMap[catName]) {
+        categoryMap[catName] = { argument: catName, value: 0 };
+      }
+      categoryMap[catName].value += Number(obj.Amount);
+    });
+    categoryData = Object.values(categoryMap);
 
-		const handleClickOpen = () => {
-			this.setState({
-				todoId: '',
-				title: '',
-				body: '',
-				buttonType: '',
-				open: true
-			});
-		};
+    // Process Budget Progress Data
+    const budgetMap = {};
+    categories.forEach(cat => {
+      const catName = cat.collectionName;
+      const monthlyExpected = (catName === 'Rent') ? 1200 : 
+                              (catName === 'Charity') ? 1200 : 
+                              (catName === 'Food') ? 500 :
+                              (catName === 'Electricity') ? 100 : 
+                              (catName === 'Internet') ? 40 : 
+                              (catName === 'Insurance') ? 75 :
+                              (catName === 'Expenses') ? 285 : 
+                              (catName === 'Fuel') ? 100 : 0;
+      const expected = monthlyExpected * expectedBudgetMultiplier;
+      
+      if (monthlyExpected > 0) {
+        budgetMap[catName] = { category: catName, actual: 0, expected: expected };
+      }
+    });
 
-		const handleSubmit = (event) => {
-			authMiddleWare(this.props.history);
-			event.preventDefault();
-			const userTodo = {
-				title: this.state.title,
-				body: this.state.body
-			};
-			const userPayment = {
-				TransactionBy: this.state.selectedOwner,
-				Category: this.state.selectedCategory,
-				Description: this.state.description,
-				Amount: this.state.amount
-			};
-			let options = {};
-			if (this.state.buttonType === 'Edit') {
-				options = {
-					url: `/payment/${this.state.todoId}`,
-					method: 'put',
-					data: userPayment
-				};
-			} else {
-				options = {
-					url: '/payment',
-					method: 'post',
-					data: userPayment
-				};
-			}
-			const authToken = localStorage.getItem('AuthToken');
-			axios.defaults.headers.common = { Authorization: `${authToken}` };
-			axios(options)
-				.then(() => {
-					this.setState({ open: false });
-					window.location.reload();
-				})
-				.catch((error) => {
-					this.setState({ open: true, errors: error.response.data });
-					console.log(error);
-				});
-		};
+    filteredPayments.forEach(obj => {
+      const catName = categories.find(x => x.collectionId == obj.Category)?.collectionName || 'Unknown';
+      if (!budgetMap[catName]) {
+        budgetMap[catName] = { category: catName, actual: 0, expected: 0 };
+      }
+      budgetMap[catName].actual += Number(obj.Amount);
+    });
+    
+    budgetData = Object.values(budgetMap).sort((a, b) => b.expected - a.expected);
+    totalExpectedBudget = budgetData.reduce((sum, item) => sum + Number(item.expected || 0), 0);
 
-		const handleViewClose = () => {
-			this.setState({ viewOpen: false });
-		};
+    // Process Owner Pie Chart (DevExpress Format: { argument, value })
+    const ownerMap = {};
+    filteredPayments.forEach(obj => {
+      const ownerName = owners.find(x => x.ownerId == obj.TransactionBy)?.ownerName || 'Unknown';
+      if (!ownerMap[ownerName]) {
+        ownerMap[ownerName] = { argument: ownerName, value: 0 };
+      }
+      ownerMap[ownerName].value += Number(obj.Amount);
+    });
+    ownerData = Object.values(ownerMap);
+  }
 
-		const handleClose = (event) => {
-			this.setState({ open: false });
-		};
+  return (
+      <div className="dashboard-page">
+        <div className="dashboard-filters">
+          <div className="filter-controls-container">
+            <div className="filter-group">
+              <label className="filter-label">View Chart:</label>
+              <select 
+                className="form-select filter-select view-select" 
+                value={selectedChart} 
+                onChange={(e) => setSelectedChart(e.target.value)}
+              >
+                <option value="progress">Budget Progress</option>
+                <option value="category">Category Pie Chart</option>
+                <option value="owner">Action Taker Pie Chart</option>
+                <option value="category_bar">Category Bar Chart</option>
+                <option value="owner_bar">Action Taker Bar Chart</option>
+              </select>
+            </div>
 
-		if (this.state.uiLoading === true) {
-			return (
-				<main className={classes.content}>
-					<div className={classes.toolbar} />
-					{this.state.uiLoading && <CircularProgress size={150} className={classes.uiProgess} />}
-				</main>
-			);
-		} else {
+            <div className="filter-group date-filters">
+              <label className="year-toggle">
+                <input
+                  type="checkbox"
+                  checked={showFullYear}
+                  onChange={(e) => setShowFullYear(e.target.checked)}
+                />
+                <span>Full year</span>
+              </label>
+              <input
+                type="month"
+                className="form-select filter-select month-picker"
+                value={selectedMonthPicker}
+                onChange={(e) => setSelectedMonthPicker(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
 
-			const categoryData = [];
-			const ownerData = [];
+        <div className="dashboard-content">
+          <div className={`glass-panel main-chart-card ${loading ? 'updating' : ''}`} style={{ opacity: loading ? 0.7 : 1, transition: 'opacity 0.3s ease' }}>
+            
+            {selectedChart === 'progress' && (
+              <>
+                <div className="chart-header">
+                  <h3 className="chart-title">Budget Progress (Actual vs Expected)</h3>
+                  <p className="chart-subtitle budget-summary">
+                    <span>Green: Under Budget &nbsp;|&nbsp; Red: Exceeded Budget</span>
+                  </p>
+                </div>
+                <div className="progress-container">
+                  {budgetData.length > 0 ? (
+                    <>
+                      <BudgetProgressBar
+                        category="All Expenses"
+                        actual={totalExpenses}
+                        expected={totalExpectedBudget}
+                      />
+                      <div className="progress-divider" />
+                      {budgetData.map((item, idx) => (
+                        <BudgetProgressBar 
+                          key={idx}
+                          category={item.category}
+                          actual={item.actual}
+                          expected={item.expected}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <div className="empty-chart">No budget data available for this period.</div>
+                  )}
+                </div>
+              </>
+            )}
 
-			const chartData = [
-				{
-				  category: 'Rent', payment: 0, expected: 1200,
-				}, {
-					category: 'Charity', payment: 0, expected: 1200,
-				}, {
-					category: 'Electricity', payment: 0, expected: 100,
-				}, {
-					category: 'Internet', payment: 0, expected: 40,
-				}, {
-					category: 'Insurance', payment: 0, expected: 75,
-				}, {
-					category: 'Expenses', payment: 0, expected: 285,
-				}, {
-					category: 'Fuel', payment: 0, expected: 100,
-				}];
+            {selectedChart === 'category' && (
+              <>
+                <div className="chart-header">
+                  <h3 className="chart-title">Transactions by Category (Pie Chart)</h3>
+                </div>
+                <div className="chart-container pie-chart-container">
+                  {categoryData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="45%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="argument"
+                          animationBegin={0}
+                          animationDuration={1500}
+                          animationEasing="ease-out"
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.05)" strokeWidth={2} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <RechartsLegend verticalAlign="bottom" wrapperStyle={{ width: '100%', left: 0, bottom: 0 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="empty-chart">No transaction data for this period.</div>
+                  )}
+                </div>
+              </>
+            )}
 
-			
-			if(this.state.owners.length > 0 && this.state.categories.length > 0 && this.state.payments.length > 0)
-			{
-				this.state.payments.map(obj=>({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function(res, value) {
-					if (!res[value.CategoryName]) {
-					  res[value.CategoryName] = { argument: value.CategoryName, value: value.Amount };
-					  categoryData.push(res[value.CategoryName])
-					}
-					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount)?Number(res[value.CategoryName].Amount):0);
-					res[value.CategoryName].value = res[value.CategoryName].Amount;
-					return res;
-				  }, {});
+            {selectedChart === 'owner' && (
+              <>
+                <div className="chart-header">
+                  <h3 className="chart-title">Transactions by Action Taker (Pie Chart)</h3>
+                </div>
+                <div className="chart-container">
+                  {ownerData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={ownerData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={110}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="argument"
+                          animationBegin={0}
+                          animationDuration={1500}
+                          animationEasing="ease-out"
+                        >
+                          {ownerData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.05)" strokeWidth={2} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <RechartsLegend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '20px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="empty-chart">No transaction data for this period.</div>
+                  )}
+                </div>
+              </>
+            )}
 
-				this.state.payments.map(obj=>({ ...obj, CategoryName: this.state.categories.find(x => x.collectionId == obj.Category).collectionName })).reduce(function(res, value) {
-					if (!res[value.CategoryName]) {
-					  res[value.CategoryName] = { category: value.CategoryName, payment: value.Amount,expected: 
-					(value.CategoryName == 'Rent')?1200:(value.CategoryName == 'Charity')?1200:(value.CategoryName == 'Food')?500:
-					(value.CategoryName == 'Electricity')?100:(value.CategoryName == 'Internet')?40:(value.CategoryName == 'Insurance')?75:
-					(value.CategoryName == 'Expenses')?285:(value.CategoryName == 'Fuel')?100:0
-					};
-					  chartData.push(res[value.CategoryName])
-					}
-					res[value.CategoryName].Amount = Number(value.Amount) + ((res[value.CategoryName].Amount)?Number(res[value.CategoryName].Amount):0);
-					res[value.CategoryName].payment = res[value.CategoryName].Amount;
-					return res;
-				  }, {});
-	
-				this.state.payments.map(obj=>({ ...obj, OwnerName: this.state.owners.find(x => x.ownerId == obj.TransactionBy).ownerName})).reduce(function(res, value) {
-					  if (!res[value.OwnerName]) {
-						res[value.OwnerName] = { argument: value.OwnerName, value: value.Amount };
-						ownerData.push(res[value.OwnerName])
-					  }
-					  res[value.OwnerName].Amount = Number(value.Amount) + ((res[value.OwnerName].Amount)?Number(res[value.OwnerName].Amount):0);
-					  res[value.OwnerName].value = res[value.OwnerName].Amount;
-					  return res;
-					}, {});
-	
-			}
-			
-			const expectedData = [
-				{ argument:'Food', value:500 },
-				{ argument:'Rent', value:1200 },
-				{ argument:'Electricity', value:100 },
-				{ argument:'Internet', value:40 },
-				{ argument:'Charity', value:1200 },
-				{ argument:'Fuel', value:100 },
-				{ argument:'Insurance', value:75 },
-				{ argument:'Expenses', value:285 },
-			  ];
-			return (
-				<main style={{width:1200, padding:24}}>
-					<div className={classes.toolbar} />
+            {selectedChart === 'category_bar' && (
+              <>
+                <div className="chart-header">
+                  <h3 className="chart-title">Transactions by Category (Bar Chart)</h3>
+                </div>
+                <div className="chart-container">
+                  {categoryData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={categoryData}
+                        margin={{ top: 20, right: 20, left: 8, bottom: 36 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis
+                          dataKey="argument"
+                          stroke="#94a3b8"
+                          tick={{ fill: '#94a3b8', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={88}
+                          tickMargin={10}
+                        />
+                        <YAxis stroke="#94a3b8" tick={{fill: '#94a3b8'}} tickFormatter={(value) => `$${value}`} axisLine={false} tickLine={false} />
+                        <RechartsTooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255,255,255,0.02)'}}/>
+                        <Bar dataKey="value" name="Amount" radius={[6, 6, 0, 0]} animationDuration={1500}>
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="empty-chart">No transaction data for this period.</div>
+                  )}
+                </div>
+              </>
+            )}
 
-					<TableContainer component={Paper} style={{ marginBottom: 20 }}>
-						<Table sx={{ minWidth: 650 }} aria-label="a dense table">
-							<TableBody>
-								<TableRow >
-									<TableCell>
-										<Paper>
-											<Chart
-												data={chartData}
-											>
-												<ArgumentAxis />
-												<ValueAxis
-													max={2400}
-												/>
+            {selectedChart === 'owner_bar' && (
+              <>
+                <div className="chart-header">
+                  <h3 className="chart-title">Transactions by Action Taker (Bar Chart)</h3>
+                </div>
+                <div className="chart-container">
+                  {ownerData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={ownerData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="argument" stroke="#94a3b8" tick={{fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#94a3b8" tick={{fill: '#94a3b8'}} tickFormatter={(value) => `$${value}`} axisLine={false} tickLine={false} />
+                        <RechartsTooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255,255,255,0.02)'}}/>
+                        <Bar dataKey="value" name="Amount" radius={[6, 6, 0, 0]} animationDuration={1500}>
+                          {ownerData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="empty-chart">No transaction data for this period.</div>
+                  )}
+                </div>
+              </>
+            )}
 
-												<BarSeries
-													name="Payment"
-													valueField="payment"
-													argumentField="category"
-												/>
-												<BarSeries
-													name="Expected"
-													valueField="expected"
-													argumentField="category"
-												/>
-												<Animation />
-												<Legend />
-												<EventTracker />
-												<Tooltip />
-												<HoverState />
-												<Title text="Payments Vs Expected payments in Oct 2021" />
-												<Stack
-												/>
-											</Chart>
-										</Paper>
-									</TableCell>
-								</TableRow>
+          </div>
+        </div>
+      </div>
+  );
+};
 
-							</TableBody>
-						</Table>
-					</TableContainer>
-
-					<TableContainer component={Paper} style={{ marginBottom: 20 }}>
-						<Table sx={{ minWidth: 650 }} aria-label="a dense table">
-							<TableBody>
-								<TableRow >
-									<TableCell>
-										<Chart
-											data={categoryData}
-											height={400}
-											width={400}
-											options={{
-												legend: { visible: true, position: "right" }
-											}}
-										>
-											<PieSeries valueField="value" argumentField="argument" />
-											<Title text="Payments per category" />
-											<Animation />
-											<Legend />
-											<EventTracker />
-											<Tooltip />
-											<HoverState />
-										</Chart>
-									</TableCell>
-									<TableCell>
-										<Chart
-											data={ownerData}
-											height={400}
-											width={400}
-											options={{
-												legend: { visible: true, position: "right" }
-											}}
-										>
-											<PieSeries valueField="value" argumentField="argument" />
-											<Title text="Payments per Action Taker" />
-											<Animation />
-											<Legend />
-											<EventTracker />
-											<Tooltip />
-											<HoverState />
-										</Chart>
-									</TableCell>
-								</TableRow>
-
-							</TableBody>
-						</Table>
-					</TableContainer>
-
-					<Dialog
-						onClose={handleViewClose}
-						aria-labelledby="customized-dialog-title"
-						open={viewOpen}
-						fullWidth
-						classes={{ paperFullWidth: classes.dialogeStyle }}
-					>
-						<DialogTitle id="customized-dialog-title" onClose={handleViewClose}>
-							{this.state.title}
-						</DialogTitle>
-						<DialogContent dividers>
-							<TextField
-								fullWidth
-								id="todoDetails"
-								name="body"
-								multiline
-								readonly
-								rows={1}
-								rowsMax={25}
-								value={this.state.body}
-								InputProps={{
-									disableUnderline: true
-								}}
-							/>
-						</DialogContent>
-					</Dialog>
-				</main>
-			);
-		}
-	}
-}
-
-export default (withStyles(styles)(Dashboard));
+export default Dashboard;

@@ -140,7 +140,7 @@ class home extends Component {
 					<AppBar color="secondary" position="fixed" className={classes.appBar}>
 						<Toolbar>
 							<Typography variant="h6" noWrap>
-								Payments
+								Transactions
 							</Typography>
 						</Toolbar>
 					</AppBar>
@@ -174,7 +174,7 @@ class home extends Component {
 									{' '}
 									<NotesIcon />{' '}
 								</ListItemIcon>
-								<ListItemText primary="Payments" />
+								<ListItemText primary="Transactions" />
 							</ListItem>
 
 							<ListItem button key="Account" onClick={this.loadAccountPage}>

@@ -69,26 +69,45 @@ exports.deleteTodo = (request, response) => {
         });
 };
 
-exports.getAllTodos = (request, response) => {
-	db
-		.collection('todos')
-		.where('username', '==', request.user.username)
-        .orderBy('createdAt', 'desc')
-		.get()
-		.then((data) => {
-			let todos = [];
-			data.forEach((doc) => {
-				todos.push({
-                    todoId: doc.id,
-                    title: doc.data().title,
-					body: doc.data().body,
-					createdAt: doc.data().createdAt,
-				});
+exports.getAllTodos = async (request, response) => {
+	try {
+		const page = parseInt(request.query.page) || 1;
+		const limit = parseInt(request.query.limit) || 10;
+		const offset = (page - 1) * limit;
+
+		let query = db.collection('todos').where('username', '==', request.user.username);
+
+		const fullDataSnapshot = await query.get();
+		const total = fullDataSnapshot.size;
+
+		const dataSnapshot = await query
+			.orderBy('createdAt', 'desc')
+			.limit(limit)
+			.offset(offset)
+			.get();
+
+		let todos = [];
+		dataSnapshot.forEach((doc) => {
+			todos.push({
+				todoId: doc.id,
+				title: doc.data().title,
+				body: doc.data().body,
+				createdAt: doc.data().createdAt,
 			});
-			return response.json(todos);
-		})
-		.catch((err) => {
-			console.error(err);
-			return response.status(500).json({ error: err.code});
 		});
+
+		return response.json({
+			status: 'success',
+			data: todos,
+			pagination: {
+				total: total,
+				page: page,
+				limit: limit,
+				totalPages: Math.ceil(total / limit)
+			}
+		});
+	} catch (err) {
+		console.error(err);
+		return response.status(500).json({ error: 'Failed to fetch todos', details: err.code });
+	}
 };
