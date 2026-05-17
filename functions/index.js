@@ -3,15 +3,28 @@ const app = require('express')();
 const auth = require('./util/auth');
 
 const cors = require('cors');
+const allowedOrigins = [
+    'https://brotherhood-edc8d.web.app',
+    'https://brotherhood-p.xyz',
+    'capacitor://localhost',
+    'ionic://localhost',
+    'http://localhost',
+    'https://localhost',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001'
+];
+
 app.use(cors({
-    origin: [
-        'https://brotherhood-edc8d.web.app',
-        'https://brotherhood-p.xyz',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3001'
-    ]
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    }
 }));
 
 
