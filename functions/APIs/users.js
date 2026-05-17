@@ -11,95 +11,202 @@ if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
 
 
 const { validateLoginData, validateSignUpData } = require('../util/validators');
+const { seedDefaultCategories } = require('../util/households');
+const { attachUserToPendingInvite, findInviteByToken } = require('./households');
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const APP_FALLBACK_ORIGIN = 'https://brotherhood-edc8d.web.app';
+
+const getAppOrigin = (request) => {
+    const origin = request.get('origin');
+    const allowedOrigins = [
+        'https://brotherhood-edc8d.web.app',
+        'https://brotherhood-p.xyz',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001'
+    ];
+
+    return allowedOrigins.includes(origin) ? origin : APP_FALLBACK_ORIGIN;
+};
+
+const getEmailVerificationSettings = (request) => ({
+    url: `${getAppOrigin(request)}/login?verified=1`,
+    handleCodeInApp: false
+});
 
 // Login
-exports.loginUser = (request, response) => {
+exports.loginUser = async (request, response) => {
     const user = {
-        email: request.body.email,
+        email: normalizeEmail(request.body.email),
         password: request.body.password
-    }
+    };
 
     const { valid, errors } = validateLoginData(user);
 	if (!valid) return response.status(400).json(errors);
 
-    firebase
-        .auth()
-        .signInWithEmailAndPassword(user.email, user.password)
-        .then((data) => {
-            return data.user.getIdToken();
-        })
-        .then((token) => {
-            return response.json({ token });
-        })
-        .catch((error) => {
-            console.error(error);
-            return response.status(403).json({ general: 'wrong credentials, please try again'});
-        })
+    try {
+        const data = await firebase.auth().signInWithEmailAndPassword(user.email, user.password);
+        const authUser = data.user;
+
+        if (!authUser.emailVerified) {
+            await authUser.sendEmailVerification(getEmailVerificationSettings(request)).catch((err) => {
+                console.error('Unable to resend verification email', err);
+            });
+            return response.status(403).json({
+                emailVerification: 'Please verify your email address before signing in. We sent you a new verification email.'
+            });
+        }
+
+        const snapshot = await db.collection('users').where('userId', '==', authUser.uid).limit(1).get();
+        if (snapshot.empty) {
+            return response.status(403).json({ general: 'User profile not found' });
+        }
+
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+        await attachUserToPendingInvite({
+            userRef: userDoc.ref,
+            userData,
+            uid: authUser.uid,
+            email: authUser.email
+        });
+
+        await userDoc.ref.update({
+            active: true,
+            emailVerified: true,
+            lastLoginAt: new Date().toISOString()
+        });
+
+        const token = await authUser.getIdToken();
+        return response.json({ token });
+    } catch (error) {
+        console.error(error);
+        return response.status(403).json({ general: 'wrong credentials, please try again'});
+    }
 };
 
-exports.signUpUser = (request, response) => {
+exports.signUpUser = async (request, response) => {
     const newUser = {
         firstName: request.body.firstName,
         lastName: request.body.lastName,
-        email: request.body.email,
+        email: normalizeEmail(request.body.email),
         phoneNumber: request.body.phoneNumber,
-        country: request.body.country,
 		password: request.body.password,
 		confirmPassword: request.body.confirmPassword,
-		username: request.body.username
+		username: request.body.username,
+		householdName: request.body.householdName,
+        inviteToken: String(request.body.inviteToken || '').trim()
     };
 
-    const { valid, errors } = validateSignUpData(newUser);
+    const validationUser = { ...newUser };
+    if (newUser.inviteToken) {
+        delete validationUser.householdName;
+    }
+
+    const { valid, errors } = validateSignUpData(validationUser);
 
 	if (!valid) return response.status(400).json(errors);
 
-    let token, userId;
-    db
-        .doc(`/users/${newUser.username}`)
-        .get()
-        .then((doc) => {
-            if (doc.exists) {
-                return response.status(400).json({ username: 'this username is already taken' });
-            } else {
-                return firebase
-                        .auth()
-                        .createUserWithEmailAndPassword(
-                            newUser.email, 
-                            newUser.password
-                    );
+    let authUser;
+    try {
+        const userDoc = await db.doc(`/users/${newUser.username}`).get();
+        if (userDoc.exists) {
+            return response.status(400).json({ username: 'this username is already taken' });
+        }
+
+        let invite = null;
+        if (newUser.inviteToken) {
+            invite = await findInviteByToken(newUser.inviteToken);
+            if (!invite) {
+                return response.status(400).json({ inviteToken: 'Invalid or expired invite link' });
             }
-        })
-        .then((data) => {
-            userId = data.user.uid;
-            return data.user.getIdToken();
-        })
-        .then((idtoken) => {
-            token = idtoken;
-            const userCredentials = {
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                username: newUser.username,
-                phoneNumber: newUser.phoneNumber,
-                country: newUser.country,
-                email: newUser.email,
-                createdAt: new Date().toISOString(),
-                userId
-            };
-            return db
-                    .doc(`/users/${newUser.username}`)
-                    .set(userCredentials);
-        })
-        .then(()=>{
-            return response.status(201).json({ token });
-        })
-        .catch((err) => {
-			console.error(err);
-			if (err.code === 'auth/email-already-in-use') {
-				return response.status(400).json({ email: 'Email already in use' });
-			} else {
-				return response.status(500).json({ general: 'Something went wrong, please try again' });
-			}
-		});
+
+            const memberData = invite.memberDoc.data();
+            if (memberData.active === false) {
+                return response.status(400).json({ inviteToken: 'This member invite is inactive' });
+            }
+            if (memberData.userId) {
+                return response.status(400).json({ inviteToken: 'This invite has already been used' });
+            }
+            if (memberData.email && normalizeEmail(memberData.email) !== newUser.email) {
+                return response.status(400).json({ email: 'Email must match the invited member email' });
+            }
+        }
+
+        const data = await firebase
+            .auth()
+            .createUserWithEmailAndPassword(newUser.email, newUser.password);
+
+        authUser = data.user;
+        await authUser.sendEmailVerification(getEmailVerificationSettings(request));
+
+        const now = new Date().toISOString();
+        const householdRef = invite ? invite.householdRef : db.collection('households').doc();
+        const memberRef = invite ? invite.memberDoc.ref : householdRef.collection('members').doc(newUser.username);
+        const role = invite ? 'member' : 'owner';
+        const batch = db.batch();
+
+        const userCredentials = {
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            username: newUser.username,
+            phoneNumber: newUser.phoneNumber,
+            email: newUser.email,
+            createdAt: now,
+            userId: authUser.uid,
+            householdId: householdRef.id,
+            memberId: memberRef.id,
+            role,
+            active: false,
+            emailVerified: false
+        };
+
+        if (!invite) {
+            batch.set(householdRef, {
+                name: newUser.householdName || `${newUser.firstName}'s Household`,
+                createdBy: newUser.username,
+                createdAt: now,
+                updatedAt: now
+            });
+            seedDefaultCategories(batch, householdRef);
+        }
+
+        batch.set(memberRef, {
+            userId: authUser.uid,
+            username: newUser.username,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            email: newUser.email,
+            phoneNumber: newUser.phoneNumber,
+            role,
+            active: true,
+            inviteStatus: invite ? 'accepted' : null,
+            inviteAcceptedAt: invite ? now : null,
+            createdAt: invite ? (invite.memberDoc.data().createdAt || now) : now,
+            updatedAt: now
+        }, { merge: true });
+
+        batch.set(db.doc(`/users/${newUser.username}`), userCredentials);
+        await batch.commit();
+
+        return response.status(201).json({
+            message: 'Account created. Please verify your email address before signing in.',
+            emailVerificationRequired: true
+        });
+    } catch (err) {
+		console.error(err);
+        if (authUser) {
+            admin.auth().deleteUser(authUser.uid).catch((deleteError) => {
+                console.error('Failed to clean up auth user after signup error', deleteError);
+            });
+        }
+		if (err.code === 'auth/email-already-in-use') {
+			return response.status(400).json({ email: 'Email already in use' });
+		}
+        return response.status(500).json({ general: 'Something went wrong, please try again' });
+	}
 }
 
 deleteImage = (imageName) => {
@@ -184,7 +291,13 @@ exports.getUserDetail = (request, response) => {
 
 exports.updateUserDetails = (request, response) => {
     let document = db.collection('users').doc(`${request.user.username}`);
-    document.update(request.body)
+    const editableUser = {};
+    ['firstName', 'lastName', 'country'].forEach((field) => {
+        if (request.body[field] !== undefined) {
+            editableUser[field] = String(request.body[field]).trim();
+        }
+    });
+    document.update(editableUser)
     .then(()=> {
         response.json({message: 'Updated successfully'});
     })

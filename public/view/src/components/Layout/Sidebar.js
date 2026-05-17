@@ -4,6 +4,8 @@ import { AuthContext } from '../../context/AuthContext';
 
 import DashboardIcon from '@material-ui/icons/BarChart';
 import NotesIcon from '@material-ui/icons/Notes';
+import CategoryIcon from '@material-ui/icons/Category';
+import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import logo from '../../assets/brand-logo.png';
@@ -21,6 +23,8 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <DashboardIcon /> },
     { name: 'Transactions', path: '/payments', icon: <NotesIcon /> },
+    { name: 'Categories', path: '/categories', icon: <CategoryIcon /> },
+    { name: 'Household', path: '/household', icon: <HomeIcon /> },
     { name: 'Account', path: '/account', icon: <AccountBoxIcon /> },
   ];
 

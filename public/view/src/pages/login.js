@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo, useState, useContext } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './Auth.css';
@@ -7,6 +7,16 @@ import logoSlogan from '../assets/brand-logo.png';
 import { applyTheme, getStoredTheme } from '../utils/theme';
 
 const Login = () => {
+  const location = useLocation();
+  const verifiedMessage = useMemo(() => {
+    return new URLSearchParams(location.search).get('verified') === '1'
+      ? 'Email verified successfully. You can sign in now.'
+      : '';
+  }, [location.search]);
+  const redirectTo = useMemo(() => {
+    const redirect = new URLSearchParams(location.search).get('redirect');
+    return redirect && redirect.startsWith('/') ? redirect : '/';
+  }, [location.search]);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -28,7 +38,7 @@ const Login = () => {
     
     try {
       const response = await api.post('/login', formData);
-      login(response.data.token);
+      login(response.data.token, redirectTo);
     } catch (error) {
       if (error.response && error.response.data) {
         setErrors(error.response.data);
@@ -56,6 +66,7 @@ const Login = () => {
             <h2 className="auth-title">Sign In</h2>
             <p className="auth-subtitle">Access your dashboard</p>
           </div>
+          {verifiedMessage && <div className="auth-success" style={{ marginBottom: '1rem' }}>{verifiedMessage}</div>}
 
           <div className="theme-toggle" aria-label="Choose theme">
             <button
@@ -101,6 +112,7 @@ const Login = () => {
               {errors.password && <div className="auth-error">{errors.password}</div>}
             </div>
             
+            {errors.emailVerification && <div className="auth-error" style={{ marginBottom: '1rem' }}>{errors.emailVerification}</div>}
             {errors.general && <div className="auth-error" style={{ marginBottom: '1rem' }}>{errors.general}</div>}
             
             <button 

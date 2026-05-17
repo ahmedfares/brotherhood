@@ -8,7 +8,9 @@ app.use(cors({
         'https://brotherhood-edc8d.web.app',
         'https://brotherhood-p.xyz',
         'http://localhost:3000',
-        'http://127.0.0.1:3000'
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001'
     ]
 }));
 
@@ -45,12 +47,43 @@ app.put('/payment/:paymentId',auth, editPayment);
 
 const {
     getOwners,
-    getCollections
+    getCollections,
+    postCollection,
+    editCollection,
+    deleteCollection
 } = require('./APIs/ref');
 
-// Payments
+// Reference data
 app.get('/owners', auth, getOwners);
 app.get('/collections', auth, getCollections);
+app.post('/collection', auth, postCollection);
+app.put('/collection/:collectionId', auth, editCollection);
+app.delete('/collection/:collectionId', auth, deleteCollection);
+
+const {
+    getHousehold,
+    createHousehold,
+    updateHousehold,
+    importLegacyHouseholdData,
+    getMembers,
+    postMember,
+    editMember,
+    deleteMember,
+    sendMemberInvite,
+    acceptMemberInvite
+} = require('./APIs/households');
+
+// Households and members
+app.get('/household', auth, getHousehold);
+app.post('/household', auth, createHousehold);
+app.put('/household', auth, updateHousehold);
+app.post('/household/import-legacy', auth, importLegacyHouseholdData);
+app.get('/members', auth, getMembers);
+app.post('/member', auth, postMember);
+app.post('/member/:memberId/invite', auth, sendMemberInvite);
+app.post('/member/invite/accept', auth, acceptMemberInvite);
+app.put('/member/:memberId', auth, editMember);
+app.delete('/member/:memberId', auth, deleteMember);
 
 const {
     loginUser,

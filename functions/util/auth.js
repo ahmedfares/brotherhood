@@ -16,8 +16,15 @@ module.exports = (request, response, next) => {
 			return db.collection('users').where('userId', '==', request.user.uid).limit(1).get();
 		})
 		.then((data) => {
-			request.user.username = data.docs[0].data().username;
-			request.user.imageUrl = data.docs[0].data().imageUrl;
+			if (data.empty) {
+				return response.status(403).json({ error: 'User profile not found' });
+			}
+			const userData = data.docs[0].data();
+			request.user.username = userData.username;
+			request.user.imageUrl = userData.imageUrl;
+			request.user.householdId = userData.householdId || null;
+			request.user.memberId = userData.memberId || null;
+			request.user.role = userData.role || null;
 			return next();
 		})
 		.catch((err) => {

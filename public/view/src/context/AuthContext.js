@@ -25,10 +25,10 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  const login = (token) => {
+  const login = (token, redirectTo = '/') => {
     localStorage.setItem('AuthToken', `Bearer ${token}`);
     // A refresh will trigger the useEffect and fetch the user
-    window.location.href = '/'; 
+    window.location.href = redirectTo;
   };
 
   const logout = () => {

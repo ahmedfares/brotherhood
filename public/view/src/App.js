@@ -5,12 +5,11 @@ import { applyTheme, getStoredTheme } from './utils/theme';
 
 import login from './pages/login';
 import signup from './pages/signup';
-import home from './pages/home';
-
-// We will replace home.js logic entirely, but for now we'll route components directly
 import Dashboard from './components/dashboard';
 import Todo from './components/todo';
 import Account from './components/account';
+import Categories from './components/categories';
+import Household from './components/household';
 
 import Layout from './components/Layout/Layout';
 
@@ -29,15 +28,16 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
   return (
     <Route
       {...rest}
-      render={(props) =>
-        localStorage.getItem('AuthToken') ? (
+      render={(props) => {
+        const redirectPath = `${props.location.pathname}${props.location.search}`;
+        return localStorage.getItem('AuthToken') ? (
           <Layout>
             <Component {...props} />
           </Layout>
         ) : (
-          <Redirect to="/login" />
-        )
-      }
+          <Redirect to={`/login?redirect=${encodeURIComponent(redirectPath)}`} />
+        );
+      }}
     />
   );
 };
@@ -55,6 +55,8 @@ function App() {
           <Route exact path="/signup" component={signup} />
           <PrivateRoute exact path="/" component={Dashboard} />
           <PrivateRoute exact path="/payments" component={Todo} />
+          <PrivateRoute exact path="/categories" component={Categories} />
+          <PrivateRoute exact path="/household" component={Household} />
           <PrivateRoute exact path="/account" component={Account} />
         </Switch>
       </Router>

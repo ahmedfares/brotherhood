@@ -85,7 +85,7 @@ const Account = () => {
     };
 
     try {
-      await api.post('/user', formRequest);
+      await api.put('/user', formRequest);
       // Update global user context
       setUser({ ...user, ...formRequest });
       alert('Profile updated successfully!');

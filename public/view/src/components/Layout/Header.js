@@ -14,6 +14,10 @@ const Header = ({ toggleSidebar }) => {
         return 'Dashboard';
       case '/payments':
         return 'Transactions';
+      case '/categories':
+        return 'Categories';
+      case '/household':
+        return 'Household';
       case '/account':
         return 'Account Settings';
       default:

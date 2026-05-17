@@ -1,5 +1,12 @@
 const { db } = require('../util/admin');
 
+const getPaymentsRef = (request) => {
+	if (request.user.householdId) {
+		return db.collection('households').doc(request.user.householdId).collection('payments');
+	}
+	return db.collection('payments');
+};
+
 exports.postOnePayment = (request, response) => {
 	
 	if (request.body.Description.trim() === '') {
@@ -14,8 +21,7 @@ exports.postOnePayment = (request, response) => {
         TransactionBy: String(request.body.TransactionBy),
         TransactionDate: new Date().toISOString()
     }
-    db
-        .collection('payments')
+    getPaymentsRef(request)
         .add(newPaymentItem)
         .then((doc)=>{
             const responsePaymentItem = newPaymentItem;
@@ -68,7 +74,7 @@ exports.editPayment = async (request, response) => {
         return response.status(400).json({ error: 'No editable fields provided' });
     }
 
-    const document = db.collection('payments').doc(`${request.params.paymentId}`);
+    const document = getPaymentsRef(request).doc(`${request.params.paymentId}`);
 
     try {
         const doc = await document.get();
@@ -91,7 +97,7 @@ exports.editPayment = async (request, response) => {
 };
 
 exports.deletePayment = (request, response) => {
-    const document = db.collection('payments').doc(`${request.params.paymentId}`);
+    const document = getPaymentsRef(request).doc(`${request.params.paymentId}`);
     document
         .get()
         .then((doc) => {
@@ -118,7 +124,7 @@ exports.getAllPayments = async (request, response) => {
 		const category = request.query.category;
 		const offset = (page - 1) * limit;
 
-		let query = db.collection('payments');
+		let query = getPaymentsRef(request);
 
 		// Apply Date Filtering
 		if (year && year !== 'All') {
@@ -192,7 +198,7 @@ exports.getAllPayments = async (request, response) => {
 
 exports.getPaymentsMetadata = async (request, response) => {
     try {
-        const snapshot = await db.collection('payments').select('TransactionDate').get();
+        const snapshot = await getPaymentsRef(request).select('TransactionDate').get();
         const years = new Set();
         snapshot.forEach(doc => {
             const date = doc.data().TransactionDate;

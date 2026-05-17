@@ -11,6 +11,13 @@
 # production
 /build
 
+# local Android build tooling
+/.android-sdk
+/.downloads
+/.gradle-local
+/.jdk
+/Brotherhood-debug.apk
+
 # misc
 .DS_Store
 .env.local

@@ -6,6 +6,17 @@ import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend as RechartsLege
 
 const COLORS = ['#c5a85c', '#0e5968', '#2fb889', '#f59e0b', '#d86b5b', '#86a89b', '#9a7a31', '#4f8f9a', '#e4c987'];
 
+const fallbackExpectedValues = {
+  Rent: 1200,
+  Charity: 1200,
+  Food: 500,
+  Electricity: 100,
+  Internet: 40,
+  Insurance: 75,
+  Expenses: 285,
+  Fuel: 100
+};
+
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
@@ -148,7 +159,7 @@ const Dashboard = () => {
   let totalExpenses = 0;
   let totalExpectedBudget = 0;
 
-  if (owners.length > 0 && categories.length > 0 && payments.length > 0) {
+  if (owners.length > 0 && categories.length > 0) {
     // 1. Data is already filtered by the server
     const filteredPayments = payments;
 
@@ -156,7 +167,7 @@ const Dashboard = () => {
     const categoryMap = {};
     filteredPayments.forEach(obj => {
       totalExpenses += Number(obj.Amount);
-      const catName = categories.find(x => x.collectionId == obj.Category)?.collectionName || 'Unknown';
+      const catName = categories.find(x => String(x.collectionId) === String(obj.Category))?.collectionName || 'Unknown';
       if (!categoryMap[catName]) {
         categoryMap[catName] = { argument: catName, value: 0 };
       }
@@ -168,14 +179,8 @@ const Dashboard = () => {
     const budgetMap = {};
     categories.forEach(cat => {
       const catName = cat.collectionName;
-      const monthlyExpected = (catName === 'Rent') ? 1200 : 
-                              (catName === 'Charity') ? 1200 : 
-                              (catName === 'Food') ? 500 :
-                              (catName === 'Electricity') ? 100 : 
-                              (catName === 'Internet') ? 40 : 
-                              (catName === 'Insurance') ? 75 :
-                              (catName === 'Expenses') ? 285 : 
-                              (catName === 'Fuel') ? 100 : 0;
+      const storedExpected = Number(cat.expectedValue);
+      const monthlyExpected = Number.isFinite(storedExpected) ? storedExpected : fallbackExpectedValues[catName] || 0;
       const expected = monthlyExpected * expectedBudgetMultiplier;
       
       if (monthlyExpected > 0) {
@@ -184,7 +189,7 @@ const Dashboard = () => {
     });
 
     filteredPayments.forEach(obj => {
-      const catName = categories.find(x => x.collectionId == obj.Category)?.collectionName || 'Unknown';
+      const catName = categories.find(x => String(x.collectionId) === String(obj.Category))?.collectionName || 'Unknown';
       if (!budgetMap[catName]) {
         budgetMap[catName] = { category: catName, actual: 0, expected: 0 };
       }
@@ -197,7 +202,7 @@ const Dashboard = () => {
     // Process Owner Pie Chart (DevExpress Format: { argument, value })
     const ownerMap = {};
     filteredPayments.forEach(obj => {
-      const ownerName = owners.find(x => x.ownerId == obj.TransactionBy)?.ownerName || 'Unknown';
+      const ownerName = owners.find(x => String(x.ownerId) === String(obj.TransactionBy))?.ownerName || 'Unknown';
       if (!ownerMap[ownerName]) {
         ownerMap[ownerName] = { argument: ownerName, value: 0 };
       }
