@@ -39,8 +39,6 @@ const Household = () => {
   const [inviteMessage, setInviteMessage] = useState('');
   const [invitingMemberId, setInvitingMemberId] = useState('');
   const [acceptingInvite, setAcceptingInvite] = useState(false);
-  const [legacyImporting, setLegacyImporting] = useState(false);
-  const [legacyImportMessage, setLegacyImportMessage] = useState('');
 
   const isOwner = user?.role === 'owner' || household?.currentUserRole === 'owner';
   const activeMembers = useMemo(() => members.filter(member => member.active !== false).length, [members]);
@@ -251,24 +249,6 @@ const Household = () => {
     }
   };
 
-  const importLegacyData = async () => {
-    setLegacyImporting(true);
-    setLegacyImportMessage('');
-
-    try {
-      const response = await api.post('/household/import-legacy');
-      const counts = response.data.counts || {};
-      setLegacyImportMessage(`Imported ${counts.transactions || 0} transactions, ${counts.categories || 0} categories, and ${counts.members || 0} legacy members.`);
-      await fetchHouseholdData();
-    } catch (error) {
-      const message = error.response?.data?.error || 'Unable to import legacy data.';
-      setLegacyImportMessage(message);
-      console.error('Error importing legacy data', error);
-    } finally {
-      setLegacyImporting(false);
-    }
-  };
-
   if (loading) {
     return <div className="loading-container">Loading Household...</div>;
   }
@@ -343,29 +323,6 @@ const Household = () => {
             </div>
           </div>
 
-          {isOwner && !household?.needsHouseholdSetup && (
-            <div className="glass-panel household-card legacy-import-card">
-              <div className="household-card-header">
-                <span className="household-icon"><HomeIcon /></span>
-                <div>
-                  <span className="household-kicker">Legacy data</span>
-                  <h2 className="household-title">Import old transactions</h2>
-                </div>
-              </div>
-              <p className="section-subtitle">
-                Move the old global transactions, categories, and members into this household.
-              </p>
-              {household?.legacyDataMigratedAt && (
-                <div className="household-inline-message">
-                  Last imported {new Date(household.legacyDataMigratedAt).toLocaleString()}.
-                </div>
-              )}
-              {legacyImportMessage && <div className="household-inline-message">{legacyImportMessage}</div>}
-              <button type="button" className="btn-primary household-save-btn" onClick={importLegacyData} disabled={legacyImporting}>
-                {legacyImporting ? 'Importing...' : 'Import Legacy Data'}
-              </button>
-            </div>
-          )}
         </div>
       )}
 

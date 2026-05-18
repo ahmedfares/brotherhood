@@ -17,6 +17,7 @@
 /.gradle-local
 /.jdk
 /Brotherhood-debug.apk
+/Brotherhood-debug.apk.zip
 
 # misc
 .DS_Store

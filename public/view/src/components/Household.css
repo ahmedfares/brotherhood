@@ -79,19 +79,6 @@
   min-width: 170px;
 }
 
-.legacy-import-card {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.legacy-import-card .household-card-header {
-  margin-bottom: 0;
-}
-
-.legacy-import-card .section-subtitle {
-  margin: 0;
-}
-
 .household-stats {
   display: grid;
   gap: 1rem;
@@ -218,10 +205,6 @@
 @media (min-width: 760px) {
   .household-details-grid {
     grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
-  }
-
-  .legacy-import-card {
-    grid-column: 1 / -1;
   }
 
   .members-toolbar {
