@@ -409,6 +409,70 @@
   }
 }
 
+@media (max-width: 640px) {
+  html.capacitor .header {
+    height: 72px;
+  }
+
+  html.capacitor .header-title {
+    font-size: 1.25rem;
+  }
+
+  html.capacitor .user-name {
+    font-size: 0.875rem;
+  }
+
+  html.capacitor .user-role {
+    font-size: 0.75rem;
+  }
+
+  html.capacitor .dashboard-filters {
+    margin-bottom: 0.5rem;
+    gap: 0.45rem;
+  }
+
+  html.capacitor .filter-group {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  html.capacitor .filter-label {
+    font-size: 0.75rem;
+  }
+
+  html.capacitor .filter-select {
+    font-size: 1rem;
+    min-height: 56px;
+  }
+
+  html.capacitor .year-toggle {
+    font-size: 0.75rem;
+  }
+
+  html.capacitor .main-chart-card {
+    padding: 0.78rem;
+  }
+
+  html.capacitor .chart-title {
+    font-size: 1.04rem;
+  }
+
+  html.capacitor .chart-subtitle {
+    font-size: 0.76rem;
+  }
+
+  html.capacitor .progress-label {
+    font-size: 0.84rem;
+  }
+
+  html.capacitor .progress-stats {
+    font-size: 0.78rem;
+  }
+
+  html.capacitor .progress-track {
+    height: 18px;
+  }
+}
+
 /* Tooltip Wrapper CSS */
 .tooltip-wrapper {
   position: relative;

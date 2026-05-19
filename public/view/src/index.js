@@ -4,6 +4,11 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
+
+if (window.Capacitor?.isNativePlatform?.()) {
+  document.documentElement.classList.add('capacitor');
+}
+
 ReactDOM.render(
   <React.StrictMode>
     <App />
