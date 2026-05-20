@@ -36,13 +36,10 @@ const BudgetProgressBar = ({ category, actual, expected }) => {
 
   // If expected is 0, avoid division by zero
   const percentage = expected > 0 ? (actual / expected) * 100 : 0;
-  const overBudgetPercentage = Math.max(percentage - 100, 0);
   const visualPercentage = percentage <= 100 ? Math.min(percentage, 100) : 100;
-  const greenPercentage = percentage <= 100
-    ? visualPercentage
-    : Math.max(100 - Math.min(overBudgetPercentage, 100), 0);
-  const redPercentage = percentage <= 100 ? 0 : Math.min(overBudgetPercentage, 100);
-  const greenSegmentWidth = percentage <= 100 ? 100 : greenPercentage;
+  const overBudgetPercentage = Math.max(percentage - 100, 0);
+  const redPercentage = Math.min(overBudgetPercentage, 100);
+  const greenPercentage = percentage <= 100 ? 100 : Math.max(100 - redPercentage, 0);
   const isOverBudget = percentage > 100;
 
   // Trigger the width animation shortly after component mounts
@@ -73,7 +70,7 @@ const BudgetProgressBar = ({ category, actual, expected }) => {
           {greenPercentage > 0 && (
             <span
               className="progress-segment progress-segment-green"
-              style={{ width: `${greenSegmentWidth}%` }}
+              style={{ width: `${greenPercentage}%` }}
             />
           )}
           {redPercentage > 0 && (
