@@ -36,11 +36,13 @@ const BudgetProgressBar = ({ category, actual, expected }) => {
 
   // If expected is 0, avoid division by zero
   const percentage = expected > 0 ? (actual / expected) * 100 : 0;
-  const visualPercentage = percentage <= 100 ? Math.min(percentage, 100) : 100;
-  const overBudgetPercentage = Math.max(percentage - 100, 0);
-  const redPercentage = Math.min(overBudgetPercentage, 100);
-  const greenPercentage = percentage <= 100 ? 100 : Math.max(100 - redPercentage, 0);
+  const visualPercentage = Math.min(percentage, 100);
   const isOverBudget = percentage > 100;
+  const barColorClass = percentage <= 100
+    ? 'bg-success-stripe'
+    : percentage <= 150
+      ? 'bg-warning-stripe'
+      : 'bg-danger-stripe';
 
   // Trigger the width animation shortly after component mounts
   useEffect(() => {
@@ -66,20 +68,10 @@ const BudgetProgressBar = ({ category, actual, expected }) => {
         className="progress-track tooltip-wrapper" 
         title={`${category}: ${percentage.toFixed(1)}% of budget used${isOverBudget ? ' (Over Budget!)' : ''}`}
       >
-        <div className="progress-fill progress-fill-combined" style={{ width: `${animatedWidth}%` }}>
-          {greenPercentage > 0 && (
-            <span
-              className="progress-segment progress-segment-green"
-              style={{ width: `${greenPercentage}%` }}
-            />
-          )}
-          {redPercentage > 0 && (
-            <span
-              className="progress-segment progress-segment-red"
-              style={{ width: `${redPercentage}%` }}
-            />
-          )}
-        </div>
+        <div 
+          className={`progress-fill ${barColorClass}`} 
+          style={{ width: `${animatedWidth}%` }}
+        />
       </div>
     </div>
   );
