@@ -363,7 +363,7 @@
 
 .progress-track {
   width: 100%;
-  height: 18px;
+  height: 15px;
   background-color: var(--bg-secondary);
   border-radius: 999px;
   overflow: hidden;
@@ -405,7 +405,7 @@
   }
 
   .progress-track {
-    height: 18px;
+    height: 15px;
   }
 }
 
@@ -469,7 +469,7 @@
   }
 
   html.capacitor .progress-track {
-    height: 18px;
+    height: 15px;
   }
 }
 
@@ -486,6 +486,31 @@
   transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
   background-size: 40px 40px;
   animation: move-stripes 2s linear infinite;
+}
+
+.progress-fill-combined {
+  display: flex;
+  overflow: hidden;
+  background: transparent;
+  animation: none;
+}
+
+.progress-segment {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  background-size: 40px 40px;
+  animation: move-stripes 2s linear infinite;
+}
+
+.progress-segment:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.progress-segment:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
 }
 
 /* 
@@ -517,6 +542,21 @@
   box-shadow: 0 0 12px rgba(47, 184, 137, 0.36);
 }
 
+.progress-segment-green {
+  background-color: #2fb889;
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.2) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.2) 75%,
+    transparent 75%,
+    transparent
+  );
+  box-shadow: 0 0 10px rgba(47, 184, 137, 0.3);
+}
+
 /* Red (Over Budget) Animated Stripe */
 .bg-danger-stripe {
   background-color: #ef4444;
@@ -531,4 +571,19 @@
     transparent
   );
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.progress-segment-red {
+  background-color: #ef4444;
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
 }
