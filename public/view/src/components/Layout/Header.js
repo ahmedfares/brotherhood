@@ -21,7 +21,7 @@ const Header = ({ toggleSidebar }) => {
       case '/account':
         return 'Account Settings';
       default:
-        return 'Brotherhood';
+        return 'Budget Buddy';
     }
   };
 

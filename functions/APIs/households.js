@@ -36,12 +36,12 @@ const getInvitePayload = (request, member) => {
 	const appOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : APP_FALLBACK_ORIGIN;
 	const inviteUrl = `${appOrigin}/household?invite=${member.inviteToken}`;
 	const signupUrl = `${appOrigin}/signup?invite=${member.inviteToken}`;
-	const subject = 'Your Brotherhood household invite';
+	const subject = 'Your Budget Buddy household invite';
 	const text = `Hi ${member.firstName || 'there'},
 
-You have been invited to join ${request.user.username}'s Brotherhood household.
+You have been invited to join ${request.user.username}'s Budget Buddy household.
 
-New to Brotherhood? Register here:
+New to Budget Buddy? Register here:
 ${signupUrl}
 
 Already have an account? Sign in here and we will connect you automatically:
@@ -50,7 +50,7 @@ ${inviteUrl}
 After signup, please verify your email before signing in.`;
 	const html = `
 		<p>Hi ${member.firstName || 'there'},</p>
-		<p>You have been invited to join ${request.user.username}'s Brotherhood household.</p>
+		<p>You have been invited to join ${request.user.username}'s Budget Buddy household.</p>
 		<p><a href="${signupUrl}">Register and join the household</a></p>
 		<p>Already have an account? <a href="${inviteUrl}">Sign in and connect automatically</a>.</p>
 		<p>After signup, please verify your email before signing in.</p>
@@ -77,7 +77,7 @@ const queueInviteEmail = async (request, member, householdName = '') => {
 		to: [member.email],
 		message: {
 			subject: householdName
-				? `Join ${householdName} on Brotherhood`
+				? `Join ${householdName} on Budget Buddy`
 				: payload.email.subject,
 			text: payload.email.text,
 			html: payload.email.html
@@ -118,7 +118,7 @@ const sendInviteEmail = async (request, member, householdName = '') => {
 		from: config.from,
 		to: member.email,
 		subject: householdName
-			? `Join ${householdName} on Brotherhood`
+			? `Join ${householdName} on Budget Buddy`
 			: payload.email.subject,
 		text: payload.email.text,
 		html: payload.email.html

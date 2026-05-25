@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.brotherhood.app',
-  appName: 'Brotherhood',
+  appName: 'Budget Buddy',
   webDir: 'build'
 };
 

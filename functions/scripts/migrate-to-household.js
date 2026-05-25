@@ -4,7 +4,7 @@ const { DEFAULT_CATEGORIES } = require('../util/households');
 const normalize = (value) => String(value || '').trim().toLowerCase();
 
 const run = async () => {
-	const householdName = process.env.HOUSEHOLD_NAME || 'Brotherhood House';
+	const householdName = process.env.HOUSEHOLD_NAME || 'Budget Buddy Household';
 	const ownerUsername = process.env.OWNER_USERNAME || '';
 
 	const existingHouseholdSnapshot = await db

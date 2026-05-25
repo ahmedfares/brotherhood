@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import './Auth.css';
-import logoSlogan from '../assets/brand-logo.png';
+import logoSlogan from '../assets/budget-buddy-logo.png';
 
 const Signup = () => {
   const location = useLocation();
@@ -54,8 +54,8 @@ const Signup = () => {
       <div className="auth-sidebar">
         <div className="auth-sidebar-bg"></div>
         <div className="auth-sidebar-content">
-          <img src={logoSlogan} alt="Brotherhood - Together to the heaven" className="auth-hero-logo" />
-          <h1 className="auth-sidebar-title">{isInviteSignup ? 'Join Your Household' : 'Join Brotherhood'}</h1>
+          <img src={logoSlogan} alt="Budget Buddy - Keep your Budget on Track" className="auth-hero-logo" />
+          <h1 className="auth-sidebar-title">{isInviteSignup ? 'Join Your Household' : 'Join Budget Buddy'}</h1>
           <p className="auth-sidebar-text">
             {isInviteSignup
               ? 'Complete your invite, verify your email, and start adding your own transactions.'
@@ -66,7 +66,7 @@ const Signup = () => {
       <div className="auth-content">
         <div className="auth-box glass-panel" style={{ padding: '2rem', maxWidth: '500px' }}>
           <div className="auth-header" style={{ marginBottom: '1.5rem' }}>
-            <img src={logoSlogan} alt="Brotherhood" className="auth-card-logo" />
+            <img src={logoSlogan} alt="Budget Buddy" className="auth-card-logo" />
             <h2 className="auth-title">{isInviteSignup ? 'Accept Invite' : 'Create Account'}</h2>
           </div>
           

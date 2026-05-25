@@ -8,7 +8,7 @@ import CategoryIcon from '@material-ui/icons/Category';
 import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import logo from '../../assets/brand-logo.png';
+import logo from '../../assets/budget-buddy-logo.png';
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const { logout } = useContext(AuthContext);
@@ -33,7 +33,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       <div className="sidebar-header">
         <div className="brand">
           <span className="brand-mark">
-            <img src={logo} alt="" />
+            <img src={logo} alt="Budget Buddy" />
           </span>
         </div>
       </div>

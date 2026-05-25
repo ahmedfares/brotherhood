@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './Auth.css';
-import logoSlogan from '../assets/brand-logo.png';
+import logoSlogan from '../assets/budget-buddy-logo.png';
 import { applyTheme, getStoredTheme } from '../utils/theme';
 
 const Login = () => {
@@ -54,7 +54,7 @@ const Login = () => {
       <div className="auth-sidebar">
         <div className="auth-sidebar-bg"></div>
         <div className="auth-sidebar-content">
-          <img src={logoSlogan} alt="Brotherhood - Together to the heaven" className="auth-hero-logo" />
+          <img src={logoSlogan} alt="Budget Buddy - Keep your Budget on Track" className="auth-hero-logo" />
           <h1 className="auth-sidebar-title">Welcome Back</h1>
           <p className="auth-sidebar-text">Track shared expenses, responsibilities, and monthly progress in one polished workspace.</p>
         </div>
@@ -62,7 +62,7 @@ const Login = () => {
       <div className="auth-content login-auth-content">
         <div className="auth-box login-auth-box glass-panel">
           <div className="auth-header">
-            <img src={logoSlogan} alt="Brotherhood" className="auth-card-logo" />
+            <img src={logoSlogan} alt="Budget Buddy" className="auth-card-logo" />
             <h2 className="auth-title">Sign In</h2>
             <p className="auth-subtitle">Access your dashboard</p>
           </div>
